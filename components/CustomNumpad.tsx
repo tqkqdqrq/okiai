@@ -35,12 +35,12 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
     ${gameMode === 'BLACK' 
       ? 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600' 
       : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300'}
-    text-xl py-4
+    text-lg sm:text-xl py-2 sm:py-3
   `;
 
   const specialButtonClass = `
     ${baseButtonClass}
-    py-3 px-2 text-sm font-semibold
+    py-2 px-1 sm:px-2 text-xs sm:text-sm font-semibold
   `;
 
   const bonusButtonStyles = {
@@ -74,7 +74,7 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
     ${gameMode === 'BLACK'
       ? 'bg-indigo-700 hover:bg-indigo-600 text-white'
       : 'bg-indigo-500 hover:bg-indigo-600 text-white'}
-    py-4 text-xl
+    py-2 sm:py-3 text-lg sm:text-xl
   `;
 
   const enterButtonClass = `
@@ -82,7 +82,7 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
     ${gameMode === 'BLACK'
       ? 'bg-blue-700 hover:bg-blue-600 text-white'
       : 'bg-blue-600 hover:bg-blue-700 text-white'}
-    py-4 text-lg font-bold
+    py-2 sm:py-3 text-base sm:text-lg font-bold
   `;
 
   const addRowButtonClass = `
@@ -90,7 +90,7 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
     ${gameMode === 'BLACK'
       ? 'bg-purple-700 hover:bg-purple-600 text-white'
       : 'bg-purple-500 hover:bg-purple-600 text-white'}
-    py-3 text-sm font-semibold flex items-center justify-center gap-1
+    py-2 text-xs sm:text-sm font-semibold flex items-center justify-center gap-1
   `;
 
   const handleTouchEnd = (e: React.TouchEvent, callback: () => void) => {
@@ -99,19 +99,17 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50">
-      {/* オーバーレイ */}
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-30"
-        onClick={onClose}
-      />
+    <>
+      {/* スクロール領域確保用のスペーサー */}
+      <div className="h-64 sm:h-72" />
       
       {/* テンキー本体 */}
-      <div className={`
-        relative ${gameMode === 'BLACK' ? 'bg-gray-900' : 'bg-gray-50'} 
-        border-t-2 ${gameMode === 'BLACK' ? 'border-gray-700' : 'border-gray-300'}
-        shadow-2xl rounded-t-2xl p-4 pb-safe
-      `}>
+      <div className="fixed bottom-0 left-0 right-0 z-50">
+        <div className={`
+          ${gameMode === 'BLACK' ? 'bg-gray-900' : 'bg-gray-50'} 
+          border-t ${gameMode === 'BLACK' ? 'border-gray-700' : 'border-gray-300'}
+          shadow-lg p-2 sm:p-3 pb-safe
+        `}>
         {/* クローズボタン */}
         <button
           onClick={onClose}
@@ -125,9 +123,9 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
           </svg>
         </button>
 
-        <div className="grid gap-2 max-w-md mx-auto">
+        <div className="grid gap-1 sm:gap-2 max-w-sm sm:max-w-md mx-auto">
           {/* 行追加ボタン */}
-          <div className="grid grid-cols-2 gap-2 mb-2">
+          <div className="grid grid-cols-2 gap-1 sm:gap-2 mb-1 sm:mb-2">
             <button
               onTouchEnd={(e) => handleTouchEnd(e, () => onAddRowClick('top'))}
               onClick={() => onAddRowClick('top')}
@@ -151,7 +149,7 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
           </div>
 
           {/* 特殊ボタン行 */}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-1 sm:gap-2">
             <button
               onTouchEnd={(e) => handleTouchEnd(e, () => onBonusTypeClick(BonusType.BB))}
               onClick={() => onBonusTypeClick(BonusType.BB)}
@@ -183,7 +181,7 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
           </div>
 
           {/* 数字キーと操作ボタン */}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 gap-1 sm:gap-2">
             {/* 1-3 */}
             <button
               onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('1'))}
@@ -295,7 +293,8 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

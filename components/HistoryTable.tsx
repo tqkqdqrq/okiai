@@ -246,10 +246,10 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
     const BonusTypeDisplay: React.FC<{ record: GameRecord }> = ({ record }) => {
         if (record.isSeparator) {
             return (
-                <span className={`inline-block px-3 py-1 text-xs font-bold rounded ${
+                <span className={`inline-block px-1 sm:px-2 py-0.5 text-[10px] sm:text-xs font-bold rounded ${
                     gameMode === 'BLACK' ? 'bg-green-800 text-green-200' : 'bg-green-600 text-white'
                 }`}>
-                    区切り
+                    区切
                 </span>
             );
         }
@@ -265,7 +265,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
         const display = typeDisplay[record.bonusType] || typeDisplay[BonusType.EMPTY];
         
         return display.text ? (
-            <span className={`inline-block px-3 py-1 text-xs font-bold rounded ${display.className}`}>
+            <span className={`inline-block px-1 sm:px-2 py-0.5 text-[10px] sm:text-xs font-bold rounded ${display.className}`}>
                 {display.text}
             </span>
         ) : null;
@@ -375,15 +375,15 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
     };
 
     return (
-        <div className="overflow-x-auto">
-            <table className="w-full min-w-[400px] border-collapse table-fixed">
+        <div className="w-full">
+            <table className="w-full border-collapse">
                 <thead>
                     <tr className={`${gameMode === 'BLACK' ? 'bg-red-600' : 'bg-gold'} text-white`}>
-                        <th className="w-12 p-2 text-sm font-semibold text-center">回</th>
-                        <th className="w-24 p-2 text-sm font-semibold text-center">Ｇ数</th>
-                        <th className="w-32 p-2 text-sm font-semibold text-center">種</th>
-                        <th className="w-24 p-2 text-sm font-semibold text-center">有利開始</th>
-                        <th className="w-24 p-2 text-sm font-semibold text-center">終了</th>
+                        <th className="w-8 sm:w-12 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">回</th>
+                        <th className="w-16 sm:w-24 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">Ｇ数</th>
+                        <th className="w-12 sm:w-20 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">種</th>
+                        <th className="p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">有利開始</th>
+                        <th className="p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">終了</th>
                     </tr>
                 </thead>
                 <tbody className={gameMode === 'BLACK' ? 'bg-gray-800' : 'bg-white'}>
@@ -413,7 +413,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                     onTouchCancel={handleTouchCancel}
                                 >
                                     <td colSpan={5} className={`
-                                        text-center py-1 text-sm font-semibold italic 
+                                        text-center py-0.5 sm:py-1 text-xs sm:text-sm font-semibold italic 
                                         ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'} 
                                         ${dragOverIndex === index ? 'bg-gradient-to-r from-blue-400 to-cyan-400 bg-opacity-30 animate-pulse' : ''}
                                         transition-all duration-300
@@ -446,16 +446,16 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                 onDragLeave={handleDragLeave}
                                 onDrop={(e) => !record.isSeparator && handleDrop(e, index)}
                             >
-                                <td className={`p-2 text-center ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                <td className={`p-1 sm:p-2 text-center text-xs sm:text-sm ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-700'}`}>
                                     {isDeleteMode ? (
                                         <button onClick={() => onDelete(record.id)} className="w-full h-full flex items-center justify-center text-red-500 hover:text-red-700">
-                                            <TrashIcon className="w-5 h-5"/>
+                                            <TrashIcon className="w-4 sm:w-5 h-4 sm:h-5"/>
                                         </button>
                                     ) : (
                                         record.segmentNumber
                                     )}
                                 </td>
-                                <td className="p-2 text-center">
+                                <td className="p-1 sm:p-2 text-center">
                                     <input 
                                         ref={(el) => { inputRefs.current[record.id] = el; }}
                                         type="text" 
@@ -466,7 +466,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                             setShowNumpad(true);
                                         }}
                                         readOnly
-                                        className={`w-full px-2 py-1 text-center border rounded-md focus:ring-1 ${
+                                        className={`w-full px-1 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm text-center border rounded focus:ring-1 ${
                                             gameMode === 'BLACK' 
                                                 ? 'bg-gray-700 text-white border-gray-600 focus:ring-red-400 focus:border-red-400 placeholder-gray-400' 
                                                 : 'bg-white text-gray-900 border-gray-300 focus:ring-gold focus:border-gold placeholder-gray-500'
@@ -476,13 +476,13 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                         placeholder="G数"
                                     />
                                 </td>
-                                <td className="p-2 text-center">
+                                <td className="p-1 sm:p-2 text-center">
                                     <BonusTypeDisplay record={record} />
                                 </td>
-                                <td className={`p-2 text-center font-mono text-xs ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
+                                <td className={`p-1 sm:p-2 text-center font-mono text-[10px] sm:text-xs ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
                                     {record.favorableZoneStart}G
                                 </td>
-                                <td className={`p-2 text-center font-mono text-xs ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
+                                <td className={`p-1 sm:p-2 text-center font-mono text-[10px] sm:text-xs ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
                                     {record.favorableZoneEnd}G
                                 </td>
                             </tr>
