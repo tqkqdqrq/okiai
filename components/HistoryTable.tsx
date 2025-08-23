@@ -382,8 +382,8 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                         <th className="w-8 sm:w-12 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">回</th>
                         <th className="w-16 sm:w-24 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">Ｇ数</th>
                         <th className="w-12 sm:w-20 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">種</th>
-                        <th className="p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">有利開始</th>
-                        <th className="p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">終了</th>
+                        <th className="w-16 sm:w-20 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">有利開始</th>
+                        <th className="w-16 sm:w-20 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">終了</th>
                     </tr>
                 </thead>
                 <tbody className={gameMode === 'BLACK' ? 'bg-gray-800' : 'bg-white'}>
