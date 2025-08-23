@@ -31,6 +31,7 @@ export default function App(): React.ReactNode {
     const [error, setError] = useState<string | null>(null);
     const [isDeleteMode, setIsDeleteMode] = useState<boolean>(false);
     const [gameMode, setGameMode] = useState<GameMode>('GOLD');
+    const [showNumpad, setShowNumpad] = useState<boolean>(false);
     
     const { 
         isLimitReached, 
@@ -263,6 +264,7 @@ export default function App(): React.ReactNode {
                         onDelete={deleteRecord}
                         onReorder={reorderRecords}
                         gameMode={gameMode}
+                        onNumpadToggle={setShowNumpad}
                     />
 
                     <div className="flex space-x-2 mt-4">
@@ -279,6 +281,9 @@ export default function App(): React.ReactNode {
 
                     <TextOutput records={processedRecords} gameMode={gameMode} onReorder={reorderRecords} />
                 </div>
+                
+                {/* テンキー表示時のスクロール余白 */}
+                {showNumpad && <div className="h-80 sm:h-96" />}
             </main>
 
             <footer className={`text-center mt-8 text-sm ${gameMode === 'BLACK' ? 'text-gray-400' : 'text-gray-500'}`}>

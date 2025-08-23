@@ -12,6 +12,7 @@ interface HistoryTableProps {
   onDelete: (id: number) => void;
   onReorder?: (newRecords: GameRecord[]) => void;
   gameMode?: 'GOLD' | 'BLACK';
+  onNumpadToggle?: (show: boolean) => void;
 }
 
 interface TouchData {
@@ -23,7 +24,7 @@ interface TouchData {
   longPressTimer?: number;
 }
 
-const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUpdate, onDelete, onReorder, gameMode = 'GOLD' }) => {
+const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUpdate, onDelete, onReorder, gameMode = 'GOLD', onNumpadToggle }) => {
     const [draggedSeparatorIndex, setDraggedSeparatorIndex] = React.useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = React.useState<number | null>(null);
     const [dropSuccess, setDropSuccess] = React.useState<number | null>(null);
@@ -153,7 +154,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                 let bestDistance = Infinity;
                 
                 rows.forEach((row, idx) => {
-                    const rect = row.getBoundingClientRect();
+                    const rect = (row as HTMLElement).getBoundingClientRect();
                     const rowCenterY = rect.top + rect.height / 2;
                     const distance = Math.abs(touch.clientY - rowCenterY);
                     
@@ -315,6 +316,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
     const handleEnterClick = () => {
         setShowNumpad(false);
         setFocusedRecordId(null);
+        onNumpadToggle?.(false);
     };
 
     const handleNavigateClick = (direction: 'up' | 'down') => {
@@ -372,6 +374,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
     const handleCloseNumpad = () => {
         setShowNumpad(false);
         setFocusedRecordId(null);
+        onNumpadToggle?.(false);
     };
 
     return (
@@ -464,6 +467,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                         onFocus={(e) => {
                                             setFocusedRecordId(record.id);
                                             setShowNumpad(true);
+                                            onNumpadToggle?.(true);
                                             // スクロール位置の調整
                                             setTimeout(() => {
                                                 e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });

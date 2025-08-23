@@ -99,12 +99,7 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
   };
 
   return (
-    <>
-      {/* スクロール領域確保用のスペーサー - 高さを増やしてテンキー分の余白を確保 */}
-      <div className="h-80 sm:h-96" />
-      
-      {/* テンキー本体 */}
-      <div className="fixed bottom-0 left-0 right-0 z-50">
+    <div className="fixed bottom-0 left-0 right-0 z-50">
         <div className={`
           ${gameMode === 'BLACK' ? 'bg-gray-900' : 'bg-gray-50'} 
           border-t ${gameMode === 'BLACK' ? 'border-gray-700' : 'border-gray-300'}
@@ -293,8 +288,7 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
           </div>
         </div>
       </div>
-      </div>
-    </>
+    </div>
   );
 };
 
