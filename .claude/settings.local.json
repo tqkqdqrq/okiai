@@ -12,7 +12,8 @@
       "Bash(Remove-Item -Path \".git\" -Recurse -Force)",
       "Bash(rm:*)",
       "Bash(git init:*)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "WebFetch(domain:vercel.com)"
     ],
     "deny": [],
     "ask": [],
