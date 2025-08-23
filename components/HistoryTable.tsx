@@ -461,12 +461,17 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                         type="text" 
                                         inputMode="none"
                                         value={record.gameCount}
-                                        onFocus={() => {
+                                        onFocus={(e) => {
                                             setFocusedRecordId(record.id);
                                             setShowNumpad(true);
+                                            // スクロール位置の調整
+                                            setTimeout(() => {
+                                                e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                            }, 100);
                                         }}
                                         readOnly
-                                        className={`w-full px-1 sm:px-2 py-0.5 sm:py-1 text-xs sm:text-sm text-center border rounded focus:ring-1 ${
+                                        style={{ fontSize: '16px' }} // iOS自動ズーム防止
+                                        className={`w-full px-1 sm:px-2 py-0.5 sm:py-1 text-center border rounded focus:ring-1 ${
                                             gameMode === 'BLACK' 
                                                 ? 'bg-gray-700 text-white border-gray-600 focus:ring-red-400 focus:border-red-400 placeholder-gray-400' 
                                                 : 'bg-white text-gray-900 border-gray-300 focus:ring-gold focus:border-gold placeholder-gray-500'

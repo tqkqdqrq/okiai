@@ -100,8 +100,8 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
 
   return (
     <>
-      {/* スクロール領域確保用のスペーサー */}
-      <div className="h-64 sm:h-72" />
+      {/* スクロール領域確保用のスペーサー - 高さを増やしてテンキー分の余白を確保 */}
+      <div className="h-80 sm:h-96" />
       
       {/* テンキー本体 */}
       <div className="fixed bottom-0 left-0 right-0 z-50">
