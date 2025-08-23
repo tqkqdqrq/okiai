@@ -22,10 +22,10 @@ export const recalculateRecords = (records: GameRecord[], gameMode: GameMode = '
     const separatorIndexes = records.map((record, index) => record.isSeparator ? index : -1).filter(index => index !== -1);
     
     return records.map((record, index) => {
-        // 区切り行の場合は累積をリセットするが、セグメント番号はカウントしない
+        // 区切り行の場合は累積をリセットし、次のデータ行が1回目から始まるようにする
         if (separatorIndexes.includes(index)) {
             favorableZoneG = 0;
-            segmentNum = 0;
+            segmentNum = 0;  // 区切り行で0にリセット
             
             return {
                 ...record,
@@ -35,7 +35,7 @@ export const recalculateRecords = (records: GameRecord[], gameMode: GameMode = '
             };
         }
 
-        // データ行の場合のみセグメント番号をカウント
+        // データ行の場合のみセグメント番号をカウント（区切り後は1から開始）
         segmentNum++;
         const currentGameCount = Number(record.gameCount) || 0;
         const bonusGames = bonusGameCounts[record.bonusType] || 0;

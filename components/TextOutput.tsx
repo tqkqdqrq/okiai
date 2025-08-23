@@ -360,55 +360,90 @@ export default function TextOutput({ records, gameMode = 'GOLD', onReorder }: Te
           </thead>
           <tbody>
             {allRecords.map((record, index) => {
-              let rowNumber = allRecords.slice(0, index + 1).filter(r => !r.isSeparator).length;
-              
+              // 区切り行の場合は区切り表示と通常データ行の両方を表示
               if (record.isSeparator) {
                 return (
-                  <tr 
-                    key={record.id}
-                    className={`
-                      ${gameMode === 'BLACK' ? 'bg-gray-600' : 'bg-gray-300'} 
-                      ${draggedIndex === index ? 'opacity-70' : ''} 
-                      ${isLongPress && draggedIndex === index ? 'shadow-2xl ring-4 ring-blue-400 ring-opacity-50' : ''}
-                      cursor-move transition-all duration-200 hover:shadow-lg relative
-                      ${!isLongPress ? 'hover:scale-[1.02] hover:shadow-md' : ''}
-                      touch-none select-none
-                      ${isDragging && draggedIndex === index ? 'z-50' : ''}
-                    `}
-                    draggable={true}
-                    onDragStart={(e) => handleDragStart(e, index)}
-                    onDragOver={(e) => handleDragOver(e, index)}
-                    onDragLeave={handleDragLeave}
-                    onDrop={(e) => handleDrop(e, index)}
-                    onTouchStart={(e) => handleTouchStart(e, index)}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
-                    onTouchCancel={handleTouchCancel}
-                  >
-                    <td colSpan={5} className={`
-                      px-2 py-1 border text-center font-bold 
-                      ${gameMode === 'BLACK' ? 'border-gray-600 text-gray-200' : 'border-gray-300 text-gray-600'} 
-                      ${dragOverIndex === index ? 
-                        `bg-gradient-to-r ${gameMode === 'BLACK' ? 'from-blue-800 to-purple-800' : 'from-blue-200 to-purple-200'} 
-                         shadow-lg border-2 ${gameMode === 'BLACK' ? 'border-blue-400' : 'border-blue-500'} 
-                         ring-2 ring-blue-300 ring-opacity-50 transition-all duration-200 transform scale-[1.02]` 
-                        : 'transition-all duration-300'
-                      }
-                    `}>
-                      <span className="select-none flex items-center justify-center gap-2">
-                        <svg className="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M3 15h18v-2H3v2zm0 4h18v-2H3v2zm0-8h18V9H3v2zm0-6v2h18V5H3z"/>
-                        </svg>
-                        --- 区切り ---
-                        <svg className="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M3 15h18v-2H3v2zm0 4h18v-2H3v2zm0-8h18V9H3v2zm0-6v2h18V5H3z"/>
-                        </svg>
-                      </span>
-                    </td>
-                  </tr>
+                  <React.Fragment key={record.id}>
+                    {/* 区切り行 */}
+                    <tr 
+                      className={`
+                        ${gameMode === 'BLACK' ? 'bg-gray-600' : 'bg-gray-300'} 
+                        ${draggedIndex === index ? 'opacity-70' : ''} 
+                        ${isLongPress && draggedIndex === index ? 'shadow-2xl ring-4 ring-blue-400 ring-opacity-50' : ''}
+                        cursor-move transition-all duration-200 hover:shadow-lg relative
+                        ${!isLongPress ? 'hover:scale-[1.02] hover:shadow-md' : ''}
+                        touch-none select-none
+                        ${isDragging && draggedIndex === index ? 'z-50' : ''}
+                      `}
+                      draggable={true}
+                      onDragStart={(e) => handleDragStart(e, index)}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, index)}
+                      onTouchStart={(e) => handleTouchStart(e, index)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleTouchEnd}
+                      onTouchCancel={handleTouchCancel}
+                    >
+                      <td colSpan={5} className={`
+                        px-2 py-1 border text-center font-bold 
+                        ${gameMode === 'BLACK' ? 'border-gray-600 text-gray-200' : 'border-gray-300 text-gray-600'} 
+                        ${dragOverIndex === index ? 
+                          `bg-gradient-to-r ${gameMode === 'BLACK' ? 'from-blue-800 to-purple-800' : 'from-blue-200 to-purple-200'} 
+                           shadow-lg border-2 ${gameMode === 'BLACK' ? 'border-blue-400' : 'border-blue-500'} 
+                           ring-2 ring-blue-300 ring-opacity-50 transition-all duration-200 transform scale-[1.02]` 
+                          : 'transition-all duration-300'
+                        }
+                      `}>
+                        <span className="select-none flex items-center justify-center gap-2">
+                          <svg className="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 15h18v-2H3v2zm0 4h18v-2H3v2zm0-8h18V9H3v2zm0-6v2h18V5H3z"/>
+                          </svg>
+                          --- 区切り ---
+                          <svg className="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M3 15h18v-2H3v2zm0 4h18v-2H3v2zm0-8h18V9H3v2zm0-6v2h18V5H3z"/>
+                          </svg>
+                        </span>
+                      </td>
+                    </tr>
+                    {/* 区切り選択されたデータ行 */}
+                    <tr 
+                      className={`
+                        ${gameMode === 'BLACK' ? 'text-gray-200 bg-green-900 bg-opacity-30' : 'text-gray-800 bg-green-50'} 
+                        ${dragOverIndex === index ? 
+                          `${gameMode === 'BLACK' ? 'bg-gradient-to-r from-blue-900 to-blue-800' : 'bg-gradient-to-r from-blue-100 to-cyan-100'} 
+                           shadow-lg border-2 ${gameMode === 'BLACK' ? 'border-blue-400' : 'border-blue-500'} 
+                           ring-2 ring-blue-300 ring-opacity-50 transition-all duration-200 transform scale-[1.02]` 
+                          : 'hover:bg-opacity-50 transition-all duration-200'
+                        }
+                      `}
+                      onDragOver={(e) => handleDragOver(e, index)}
+                      onDragLeave={handleDragLeave}
+                      onDrop={(e) => handleDrop(e, index)}
+                    >
+                      <td className={`px-2 py-1 border text-center ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>
+                        {record.segmentNumber || 0}
+                      </td>
+                      <td className={`px-2 py-1 border text-right ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>
+                        {record.gameCount || ''}
+                      </td>
+                      <td className={`px-2 py-1 border text-center ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>
+                        <span className={record.bonusType === 'BB' ? 'text-red-500' : record.bonusType === 'RB' ? 'text-blue-500' : ''}>
+                          {record.bonusType || ''}
+                        </span>
+                      </td>
+                      <td className={`px-2 py-1 border text-right ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>
+                        {record.favorableZoneStart || 0}
+                      </td>
+                      <td className={`px-2 py-1 border text-right ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>
+                        {record.favorableZoneEnd || 0}
+                      </td>
+                    </tr>
+                  </React.Fragment>
                 );
               }
               
+              // 通常のデータ行
               return (
                 <tr 
                   key={record.id}
@@ -426,7 +461,7 @@ export default function TextOutput({ records, gameMode = 'GOLD', onReorder }: Te
                   onDrop={(e) => handleDrop(e, index)}
                 >
                   <td className={`px-2 py-1 border text-center ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>
-                    {rowNumber}
+                    {record.segmentNumber}
                   </td>
                   <td className={`px-2 py-1 border text-right ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>
                     {record.gameCount || ''}
