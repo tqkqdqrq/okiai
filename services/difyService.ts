@@ -1,23 +1,26 @@
-
 import type { RawRecord } from "../types";
 import { BonusType } from "../types";
 
-const API_KEY = import.meta.env.VITE_DIFY_API_KEY;
-const BASE_URL = import.meta.env.VITE_DIFY_BASE_URL || "https://suroschooldifyai.xyz/v1";
+// 環境変数の設定 - 簡素化
+const getConfig = () => {
+  const config = {
+    apiKey: import.meta.env.VITE_DIFY_API_KEY || import.meta.env.DIFY_API_KEY,
+    baseUrl: import.meta.env.VITE_DIFY_BASE_URL || import.meta.env.DIFY_BASE_URL || "https://suroschooldifyai.xyz/v1"
+  };
+  
+  console.log("🔧 Config loaded:", {
+    hasApiKey: !!config.apiKey,
+    apiKeyPrefix: config.apiKey ? config.apiKey.substring(0, 8) + "..." : "undefined",
+    baseUrl: config.baseUrl,
+    allEnvKeys: Object.keys(import.meta.env).filter(key => key.includes('DIFY'))
+  });
+  
+  return config;
+};
 
-console.log("Debug - API_KEY loaded:", API_KEY ? "✓ Key present" : "✗ Key missing");
-console.log("Debug - API_KEY value:", API_KEY ? `${API_KEY.substring(0, 8)}...` : "undefined");
-console.log("Debug - Base URL:", BASE_URL);
-console.log("Debug - All environment variables:", Object.keys(import.meta.env));
-console.log("Debug - VITE_ variables:", Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
-
-if (!API_KEY) {
-  console.error("DIFY API_KEY environment variable not set.");
-}
-
-// 手動でテキストからパチスロデータを解析する関数
+// 手動でテキストからパチスロデータを解析する関数（フォールバック）
 function parseManually(text: string): { results: RawRecord[] } {
-  console.log("Debug - Manual parsing of text:", text);
+  console.log("🔍 Manual parsing of text:", text.substring(0, 100) + "...");
   
   const results: RawRecord[] = [];
   
@@ -56,25 +59,70 @@ function parseManually(text: string): { results: RawRecord[] } {
     }
   }
   
-  console.log("Debug - Manual parsing results:", results);
+  console.log("✅ Manual parsing results:", results);
   return { results };
 }
 
-// Function to convert a File object to a base64 string
-const fileToBase64 = async (file: File): Promise<string> => {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-        if (typeof reader.result === 'string') {
-            resolve(reader.result.split(',')[1]);
-        } else {
-            reject(new Error('Failed to read file as base64'));
-        }
+// APIクライアント
+class DifyAPIClient {
+  private config: { apiKey: string; baseUrl: string };
+  
+  constructor() {
+    this.config = getConfig();
+  }
+  
+  async uploadFile(file: File): Promise<{ id: string }> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("user", "pachislot-calculator");
+
+    const response = await fetch(`${this.config.baseUrl}/files/upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.config.apiKey}`,
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`File upload failed: ${response.status} - ${errorText}`);
+    }
+
+    return response.json();
+  }
+  
+  async sendChatMessage(fileId: string, prompt: string): Promise<any> {
+    const payload = {
+      inputs: {},
+      query: prompt,
+      response_mode: 'blocking',
+      conversation_id: '',
+      user: 'pachislot-calculator',
+      files: [{
+        type: 'image',
+        transfer_method: 'local_file',
+        upload_file_id: fileId
+      }]
     };
-    reader.onerror = () => reject(new Error('FileReader error'));
-    reader.readAsDataURL(file);
-  });
-};
+
+    const response = await fetch(`${this.config.baseUrl}/chat-messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.config.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload)
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Chat API failed: ${response.status} - ${errorText}`);
+    }
+    
+    return response.json();
+  }
+}
 
 export async function analyzeImageHistory(file: File): Promise<RawRecord[]> {
   const prompt = `
@@ -101,117 +149,89 @@ export async function analyzeImageHistory(file: File): Promise<RawRecord[]> {
     説明や追加テキストは不要です。JSONのみ返してください。
   `;
 
+  const config = getConfig();
+  
+  // APIキーが設定されていない場合はフォールバックを使用
+  if (!config.apiKey) {
+    console.warn("⚠️ API key not found, using fallback parsing");
+    return parseManually("No API available - manual parsing required").results;
+  }
+
   try {
-    console.log("Debug - Starting Dify API call...");
-    console.log("Debug - File type:", file.type, "File size:", file.size);
+    console.log("🚀 Starting Dify API call...");
+    console.log("📎 File:", { type: file.type, size: file.size, name: file.name });
     
-    // Step 1: Upload file to Dify
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("user", "pachislot-calculator");
-
-    console.log("Debug - Uploading file...");
-    const uploadResponse = await fetch(`${BASE_URL}/files/upload`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-      },
-      body: formData
-    });
-
-    if (!uploadResponse.ok) {
-      const uploadError = await uploadResponse.text();
-      console.error("Debug - Upload error response:", uploadError);
-      throw new Error(`File upload failed: ${uploadResponse.status} ${uploadResponse.statusText} - ${uploadError}`);
-    }
-
-    const uploadData = await uploadResponse.json();
-    console.log("Debug - File uploaded successfully:", uploadData);
-
-    // Step 2: Send chat message with uploaded file reference
-    const chatPayload = {
-      inputs: {},
-      query: prompt,
-      response_mode: 'blocking',
-      conversation_id: '',
-      user: 'pachislot-calculator',
-      files: [{
-        type: 'image',
-        transfer_method: 'local_file',
-        upload_file_id: uploadData.id
-      }]
-    };
-
-    console.log("Debug - Sending chat message...");
-    const response = await fetch(`${BASE_URL}/chat-messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(chatPayload)
-    });
+    const client = new DifyAPIClient();
     
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Debug - API error response:", errorText);
-      throw new Error(`API request failed: ${response.status} ${response.statusText} - ${errorText}`);
-    }
-    
-    const data = await response.json();
-    console.log("Debug - API response received:", data);
+    // Step 1: Upload file
+    console.log("📤 Uploading file...");
+    const uploadData = await client.uploadFile(file);
+    console.log("✅ File uploaded:", uploadData);
 
-    // Difyのレスポンス形式に応じて調整
+    // Step 2: Send chat message
+    console.log("💬 Sending chat message...");
+    const data = await client.sendChatMessage(uploadData.id, prompt);
+    console.log("📨 API response:", data);
+
+    // Parse response
     const responseText = data.answer || data.data || data.message || '';
-    console.log("Debug - Response text:", responseText);
+    console.log("📝 Response text:", responseText);
     
-    // JSONを抽出する（日本語テキストの中からJSONを探す）
+    // JSONを抽出する
     let parsed;
     try {
-      // まずそのままJSONパースを試す
       parsed = JSON.parse(responseText);
     } catch (e) {
-      // JSONが直接パースできない場合、テキストからJSONを抽出
-      console.log("Debug - Trying to extract JSON from text response");
+      console.log("🔍 Extracting JSON from text response");
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
-        console.log("Debug - Found JSON in text:", jsonMatch[0]);
         try {
           parsed = JSON.parse(jsonMatch[0]);
         } catch (e2) {
-          console.log("Debug - Failed to parse extracted JSON, trying manual parsing");
-          // 手動でデータを解析（フォールバック）
+          console.log("⚠️ JSON parsing failed, using manual parsing");
           parsed = parseManually(responseText);
         }
       } else {
-        console.log("Debug - No JSON found, trying manual parsing");
+        console.log("⚠️ No JSON found, using manual parsing");
         parsed = parseManually(responseText);
       }
     }
     
-    // Ensure the response has the expected structure
+    // Validate and filter results
     if (parsed && Array.isArray(parsed.results)) {
-        // Further validation to filter out any malformed entries
         const validResults = parsed.results.filter(
             (r: any): r is RawRecord => 
             typeof r.game === 'number' && (r.type === BonusType.BB || r.type === BonusType.RB)
         );
+        console.log("✅ Valid results:", validResults);
         return validResults;
     } else {
+        console.error("❌ Invalid response format:", parsed);
         throw new Error("AI response did not match the expected format.");
     }
     
   } catch (error) {
-    console.error("Debug - Detailed error:", error);
-    console.error("Debug - Error message:", error instanceof Error ? error.message : String(error));
-    console.error("Debug - Error stack:", error instanceof Error ? error.stack : "No stack trace");
+    console.error("💥 API Error:", error);
     
-    if (error instanceof Error && error.message.includes('429')) {
-         throw new Error("API rate limit exceeded. Please wait and try again.");
+    // エラーの詳細ログ
+    if (error instanceof Error) {
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
     }
-    if (error instanceof Error && error.message.includes('API_KEY')) {
-         throw new Error("Invalid API key. Please check your VITE_DIFY_API_KEY in .env.local");
+    
+    // 特定のエラーに対する対応
+    if (error instanceof Error) {
+      if (error.message.includes('401') || error.message.includes('unauthorized')) {
+        throw new Error("🔑 認証エラー: APIキーを確認してください。Vercelの環境変数でVITE_DIFY_API_KEYを設定してください。");
+      }
+      if (error.message.includes('429')) {
+        throw new Error("⏰ レート制限: しばらく待ってから再試行してください。");
+      }
+      if (error.message.includes('400') || error.message.includes('Bad Request')) {
+        throw new Error("📝 リクエストエラー: ファイル形式または内容を確認してください。");
+      }
     }
-    throw new Error(`Failed to process image with AI: ${error instanceof Error ? error.message : String(error)}`);
+    
+    throw new Error(`🔥 画像処理に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
