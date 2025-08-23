@@ -1,6 +1,15 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import type { GameRecord } from '../types';
 
+interface TouchData {
+  startX: number;
+  startY: number;
+  startTime: number;
+  element: HTMLElement;
+  index: number;
+  longPressTimer?: number;
+}
+
 interface TextOutputProps {
   records: GameRecord[];
   gameMode?: 'GOLD' | 'BLACK';
@@ -10,6 +19,10 @@ interface TextOutputProps {
 export default function TextOutput({ records, gameMode = 'GOLD', onReorder }: TextOutputProps): React.ReactNode {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [touchData, setTouchData] = useState<TouchData | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isLongPress, setIsLongPress] = useState(false);
+  const [dragPreview, setDragPreview] = useState<{x: number, y: number} | null>(null);
 
   // ドラッグ開始
   const handleDragStart = useCallback((e: React.DragEvent<HTMLTableRowElement>, index: number) => {
@@ -46,6 +59,167 @@ export default function TextOutput({ records, gameMode = 'GOLD', onReorder }: Te
     setDraggedIndex(null);
     setDragOverIndex(null);
   }, [draggedIndex, records, onReorder]);
+
+  // バイブレーション関数
+  const triggerHapticFeedback = useCallback(() => {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50);
+    }
+  }, []);
+
+  // タッチイベント（スマホ対応） - 長押しドラッグ
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLTableRowElement>, index: number) => {
+    const record = records[index];
+    if (!record?.isSeparator) return;
+    
+    const touch = e.touches[0];
+    const element = e.currentTarget;
+    
+    // 長押しタイマーを設定
+    const longPressTimer = window.setTimeout(() => {
+      setIsLongPress(true);
+      setDraggedIndex(index);
+      triggerHapticFeedback();
+      
+      // 長押し成功時の視覚的フィードバック
+      element.style.transform = 'scale(1.1)';
+      element.style.opacity = '0.9';
+      element.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+      element.style.zIndex = '1000';
+      element.style.transition = 'all 0.2s ease-out';
+    }, 500);
+    
+    setTouchData({
+      startX: touch.clientX,
+      startY: touch.clientY,
+      startTime: Date.now(),
+      element,
+      index,
+      longPressTimer
+    });
+    setIsDragging(false);
+  }, [records, triggerHapticFeedback]);
+  
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLTableRowElement>) => {
+    if (!touchData) return;
+    
+    const touch = e.touches[0];
+    const deltaX = Math.abs(touch.clientX - touchData.startX);
+    const deltaY = Math.abs(touch.clientY - touchData.startY);
+    const totalDelta = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    
+    // 長押し中に大きく動いた場合は長押しをキャンセル
+    if (totalDelta > 15 && !isLongPress) {
+      if (touchData.longPressTimer) {
+        clearTimeout(touchData.longPressTimer);
+      }
+      resetTouchState();
+      return;
+    }
+    
+    // 長押しが完了している場合のみドラッグを許可
+    if (isLongPress) {
+      e.preventDefault();
+      setIsDragging(true);
+      
+      // ドラッグ中の要素を移動
+      const offsetY = touch.clientY - touchData.startY;
+      touchData.element.style.transform = `translateY(${offsetY}px) scale(1.1)`;
+      touchData.element.style.transition = 'none';
+      
+      setDragPreview({
+        x: touch.clientX,
+        y: touch.clientY
+      });
+      
+      // ドロップ位置検出
+      const tableRect = touchData.element.closest('table')?.getBoundingClientRect();
+      if (tableRect) {
+        const rows = Array.from(touchData.element.closest('tbody')?.querySelectorAll('tr') || []);
+        let bestTargetIndex = -1;
+        let bestDistance = Infinity;
+        
+        rows.forEach((row, idx) => {
+          const rect = row.getBoundingClientRect();
+          const rowCenterY = rect.top + rect.height / 2;
+          const distance = Math.abs(touch.clientY - rowCenterY);
+          
+          if (distance < bestDistance && idx !== touchData.index) {
+            bestDistance = distance;
+            bestTargetIndex = idx;
+          }
+        });
+        
+        if (bestTargetIndex >= 0 && bestDistance < 50) {
+          setDragOverIndex(bestTargetIndex);
+        } else {
+          setDragOverIndex(null);
+        }
+      }
+    }
+  }, [touchData, isLongPress]);
+  
+  const resetTouchState = useCallback(() => {
+    if (touchData) {
+      touchData.element.style.transform = '';
+      touchData.element.style.opacity = '';
+      touchData.element.style.boxShadow = '';
+      touchData.element.style.zIndex = '';
+      touchData.element.style.transition = '';
+      
+      if (touchData.longPressTimer) {
+        clearTimeout(touchData.longPressTimer);
+      }
+    }
+    
+    setTouchData(null);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    setIsDragging(false);
+    setIsLongPress(false);
+    setDragPreview(null);
+  }, [touchData]);
+  
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLTableRowElement>) => {
+    if (!touchData) return;
+    
+    if (touchData.longPressTimer) {
+      clearTimeout(touchData.longPressTimer);
+    }
+    
+    // ドラッグ完了の場合
+    if (isLongPress && isDragging && dragOverIndex !== null && dragOverIndex !== touchData.index && onReorder) {
+      const newRecords = [...records];
+      const [draggedRecord] = newRecords.splice(touchData.index, 1);
+      newRecords.splice(dragOverIndex, 0, draggedRecord);
+      onReorder(newRecords);
+      triggerHapticFeedback();
+    } else if (isLongPress) {
+      // 長押ししたが有効なドロップ位置がない場合
+      touchData.element.style.transition = 'all 0.3s ease-out';
+      touchData.element.style.transform = 'scale(1.05)';
+      setTimeout(() => {
+        if (touchData.element) {
+          touchData.element.style.transform = '';
+        }
+      }, 150);
+    }
+    
+    setTimeout(resetTouchState, 100);
+  }, [touchData, isLongPress, isDragging, dragOverIndex, onReorder, records, triggerHapticFeedback, resetTouchState]);
+  
+  const handleTouchCancel = useCallback((e: React.TouchEvent<HTMLTableRowElement>) => {
+    resetTouchState();
+  }, [resetTouchState]);
+
+  // クリーンアップ
+  React.useEffect(() => {
+    return () => {
+      if (touchData?.longPressTimer) {
+        clearTimeout(touchData.longPressTimer);
+      }
+    };
+  }, [touchData]);
 
   const resultHtml = useMemo(() => {
     // 全レコードを処理（区切り行も現在も含む）
@@ -87,11 +261,11 @@ export default function TextOutput({ records, gameMode = 'GOLD', onReorder }: Te
     
     html += '<table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;">';
     html += `<tr style="background: ${tableBgColor}; font-weight: bold;">`;
-    html += `<td style="padding: 2px 4px; border: 1px solid ${cellBorderColor};">No</td>`;
-    html += `<td style="padding: 2px 4px; border: 1px solid ${cellBorderColor};">ゲーム数</td>`;
-    html += `<td style="padding: 2px 4px; border: 1px solid ${cellBorderColor};">種別</td>`;
-    html += `<td style="padding: 2px 4px; border: 1px solid ${cellBorderColor};">有利区間開始</td>`;
-    html += `<td style="padding: 2px 4px; border: 1px solid ${cellBorderColor};">有利区間終了</td>`;
+    html += `<td style="padding: 2px 4px; border: 1px solid ${cellBorderColor};">回</td>`;
+    html += `<td style="padding: 2px 4px; border: 1px solid ${cellBorderColor};">Ｇ数</td>`;
+    html += `<td style="padding: 2px 4px; border: 1px solid ${cellBorderColor};">種</td>`;
+    html += `<td style="padding: 2px 4px; border: 1px solid ${cellBorderColor};">有利開始</td>`;
+    html += `<td style="padding: 2px 4px; border: 1px solid ${cellBorderColor};">終了</td>`;
     html += '</tr>';
     
     let rowNumber = 1;
@@ -177,11 +351,11 @@ export default function TextOutput({ records, gameMode = 'GOLD', onReorder }: Te
         <table className="w-full text-sm">
           <thead>
             <tr className={`${gameMode === 'BLACK' ? 'bg-gray-700 text-gray-200' : 'bg-gray-200 text-gray-800'} font-bold`}>
-              <td className={`px-2 py-1 border ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>No</td>
-              <td className={`px-2 py-1 border ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>ゲーム数</td>
-              <td className={`px-2 py-1 border ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>種別</td>
-              <td className={`px-2 py-1 border ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>有利区間開始</td>
-              <td className={`px-2 py-1 border ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>有利区間終了</td>
+              <td className={`px-2 py-1 border ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>回</td>
+              <td className={`px-2 py-1 border ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>Ｇ数</td>
+              <td className={`px-2 py-1 border ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>種</td>
+              <td className={`px-2 py-1 border ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>有利開始</td>
+              <td className={`px-2 py-1 border ${gameMode === 'BLACK' ? 'border-gray-600' : 'border-gray-300'}`}>終了</td>
             </tr>
           </thead>
           <tbody>
@@ -194,33 +368,40 @@ export default function TextOutput({ records, gameMode = 'GOLD', onReorder }: Te
                     key={record.id}
                     className={`
                       ${gameMode === 'BLACK' ? 'bg-gray-600' : 'bg-gray-300'} 
-                      ${draggedIndex === index ? 'opacity-30 scale-105 rotate-1' : ''} 
-                      cursor-move transition-all duration-300 hover:shadow-xl hover:shadow-blue-500/20
-                      ${draggedIndex !== null && draggedIndex !== index ? 'hover:scale-[1.03] hover:-rotate-1' : ''}
-                      relative z-10
+                      ${draggedIndex === index ? 'opacity-70' : ''} 
+                      ${isLongPress && draggedIndex === index ? 'shadow-2xl ring-4 ring-blue-400 ring-opacity-50' : ''}
+                      cursor-move transition-all duration-200 hover:shadow-lg relative
+                      ${!isLongPress ? 'hover:scale-[1.02] hover:shadow-md' : ''}
+                      touch-none select-none
+                      ${isDragging && draggedIndex === index ? 'z-50' : ''}
                     `}
                     draggable={true}
                     onDragStart={(e) => handleDragStart(e, index)}
                     onDragOver={(e) => handleDragOver(e, index)}
                     onDragLeave={handleDragLeave}
                     onDrop={(e) => handleDrop(e, index)}
+                    onTouchStart={(e) => handleTouchStart(e, index)}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                    onTouchCancel={handleTouchCancel}
                   >
                     <td colSpan={5} className={`
                       px-2 py-1 border text-center font-bold 
                       ${gameMode === 'BLACK' ? 'border-gray-600 text-gray-200' : 'border-gray-300 text-gray-600'} 
                       ${dragOverIndex === index ? 
-                        `bg-gradient-to-r ${gameMode === 'BLACK' ? 'from-blue-700 to-purple-700' : 'from-blue-400 to-purple-400'} 
-                         bg-opacity-60 animate-pulse shadow-inner border-2 ${gameMode === 'BLACK' ? 'border-cyan-400' : 'border-blue-500'}` 
+                        `bg-gradient-to-r ${gameMode === 'BLACK' ? 'from-blue-800 to-purple-800' : 'from-blue-200 to-purple-200'} 
+                         shadow-lg border-2 ${gameMode === 'BLACK' ? 'border-blue-400' : 'border-blue-500'} 
+                         ring-2 ring-blue-300 ring-opacity-50 transition-all duration-200 transform scale-[1.02]` 
                         : 'transition-all duration-300'
                       }
                     `}>
                       <span className="select-none flex items-center justify-center gap-2">
-                        <svg className="w-4 h-4 inline-block animate-bounce" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6-6-6 1.41-1.42z"/>
+                        <svg className="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M3 15h18v-2H3v2zm0 4h18v-2H3v2zm0-8h18V9H3v2zm0-6v2h18V5H3z"/>
                         </svg>
                         --- 区切り ---
-                        <svg className="w-4 h-4 inline-block animate-bounce" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M7.41 8.58L12 13.17l4.59-4.59L18 10l-6 6-6-6 1.41-1.42z"/>
+                        <svg className="w-4 h-4 inline-block" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M3 15h18v-2H3v2zm0 4h18v-2H3v2zm0-8h18V9H3v2zm0-6v2h18V5H3z"/>
                         </svg>
                       </span>
                     </td>
@@ -234,9 +415,9 @@ export default function TextOutput({ records, gameMode = 'GOLD', onReorder }: Te
                   className={`
                     ${gameMode === 'BLACK' ? 'text-gray-200' : 'text-gray-800'} 
                     ${dragOverIndex === index ? 
-                      `${gameMode === 'BLACK' ? 'bg-gradient-to-r from-indigo-800 to-purple-800' : 'bg-gradient-to-r from-blue-100 to-indigo-100'} 
-                       shadow-lg scale-[1.02] border-l-4 ${gameMode === 'BLACK' ? 'border-cyan-400' : 'border-blue-500'} 
-                       transition-all duration-300 transform` 
+                      `${gameMode === 'BLACK' ? 'bg-gradient-to-r from-blue-900 to-blue-800' : 'bg-gradient-to-r from-blue-100 to-cyan-100'} 
+                       shadow-lg border-2 ${gameMode === 'BLACK' ? 'border-blue-400' : 'border-blue-500'} 
+                       ring-2 ring-blue-300 ring-opacity-50 transition-all duration-200 transform scale-[1.02]` 
                       : 'hover:bg-opacity-50 transition-all duration-200'
                     }
                   `}
