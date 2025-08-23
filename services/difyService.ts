@@ -6,8 +6,10 @@ const API_KEY = import.meta.env.VITE_DIFY_API_KEY;
 const BASE_URL = import.meta.env.VITE_DIFY_BASE_URL || "https://suroschooldifyai.xyz/v1";
 
 console.log("Debug - API_KEY loaded:", API_KEY ? "✓ Key present" : "✗ Key missing");
+console.log("Debug - API_KEY value:", API_KEY ? `${API_KEY.substring(0, 8)}...` : "undefined");
 console.log("Debug - Base URL:", BASE_URL);
-console.log("Debug - Environment variables:", import.meta.env);
+console.log("Debug - All environment variables:", Object.keys(import.meta.env));
+console.log("Debug - VITE_ variables:", Object.keys(import.meta.env).filter(key => key.startsWith('VITE_')));
 
 if (!API_KEY) {
   console.error("DIFY API_KEY environment variable not set.");
