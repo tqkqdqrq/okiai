@@ -282,7 +282,7 @@ export default function App(): React.ReactNode {
             </main>
 
             <footer className={`text-center mt-8 text-sm ${gameMode === 'BLACK' ? 'text-gray-400' : 'text-gray-500'}`}>
-                <p>{gameMode === 'BLACK' ? '沖ドキBLACK&GS Favorable Zone Calculator' : '沖ドキGOLD Favorable Zone Calculator'}</p>
+                <p>Favorable Zone Calculator</p>
             </footer>
             
             {/* AIローディングアニメーション */}
