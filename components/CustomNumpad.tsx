@@ -287,7 +287,6 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
             </button>
           </div>
         </div>
-      </div>
     </div>
   );
 };
