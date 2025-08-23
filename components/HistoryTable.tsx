@@ -3,6 +3,7 @@ import React from 'react';
 import type { GameRecord } from '../types';
 import { BonusType } from '../types';
 import { TrashIcon } from './icons';
+import CustomNumpad from './CustomNumpad';
 
 interface HistoryTableProps {
   records: GameRecord[];
@@ -30,6 +31,9 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
     const [isDragging, setIsDragging] = React.useState(false);
     const [isLongPress, setIsLongPress] = React.useState(false);
     const [dragPreview, setDragPreview] = React.useState<{x: number, y: number} | null>(null);
+    const [showNumpad, setShowNumpad] = React.useState(false);
+    const [focusedRecordId, setFocusedRecordId] = React.useState<number | null>(null);
+    const inputRefs = React.useRef<{ [key: number]: HTMLInputElement | null }>({});
     
     // 区切り行をドラッグ開始
     const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
@@ -239,41 +243,135 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
         };
     }, [touchData]);
     
-    const BonusTypeSelector: React.FC<{ record: GameRecord }> = ({ record }) => {
-        const types: BonusType[] = [BonusType.BB, BonusType.RB, BonusType.CURRENT, BonusType.SEPARATOR];
+    const BonusTypeDisplay: React.FC<{ record: GameRecord }> = ({ record }) => {
+        if (record.isSeparator) {
+            return (
+                <span className={`inline-block px-3 py-1 text-xs font-bold rounded ${
+                    gameMode === 'BLACK' ? 'bg-green-800 text-green-200' : 'bg-green-600 text-white'
+                }`}>
+                    区切り
+                </span>
+            );
+        }
         
-        return (
-            <div className="grid grid-cols-2 gap-1">
-                {types.map(type => {
-                    const isSelected = type === BonusType.SEPARATOR ? record.isSeparator : record.bonusType === type;
-                    const styleMap = {
-                        [BonusType.BB]: 'hover:bg-red-200 ' + (isSelected ? 'bg-brand-red text-white' : 'bg-red-100 text-brand-red'),
-                        [BonusType.RB]: 'hover:bg-blue-200 ' + (isSelected ? 'bg-brand-blue text-white' : 'bg-blue-100 text-brand-blue'),
-                        [BonusType.CURRENT]: 'hover:bg-orange-200 ' + (isSelected ? 'bg-brand-orange text-white' : 'bg-orange-100 text-brand-orange'),
-                        [BonusType.SEPARATOR]: 'hover:bg-green-200 ' + (isSelected ? 'bg-brand-green text-white' : 'bg-green-100 text-brand-green'),
-                        [BonusType.EMPTY]: ''
-                    };
+        const typeDisplay = {
+            [BonusType.BB]: { text: 'BB', className: gameMode === 'BLACK' ? 'bg-red-800 text-red-200' : 'bg-red-600 text-white' },
+            [BonusType.RB]: { text: 'RB', className: gameMode === 'BLACK' ? 'bg-blue-800 text-blue-200' : 'bg-blue-600 text-white' },
+            [BonusType.CURRENT]: { text: '現在', className: gameMode === 'BLACK' ? 'bg-orange-800 text-orange-200' : 'bg-orange-600 text-white' },
+            [BonusType.EMPTY]: { text: '-', className: gameMode === 'BLACK' ? 'text-gray-500' : 'text-gray-400' },
+            [BonusType.SEPARATOR]: { text: '', className: '' }
+        };
+        
+        const display = typeDisplay[record.bonusType] || typeDisplay[BonusType.EMPTY];
+        
+        return display.text ? (
+            <span className={`inline-block px-3 py-1 text-xs font-bold rounded ${display.className}`}>
+                {display.text}
+            </span>
+        ) : null;
+    };
 
-                    const handleClick = () => {
-                        if (type === BonusType.SEPARATOR) {
-                            onUpdate(record.id, { isSeparator: !record.isSeparator });
-                        } else {
-                            onUpdate(record.id, { bonusType: record.bonusType === type ? BonusType.EMPTY : type });
-                        }
-                    };
-                    
-                    return (
-                        <button
-                            key={type}
-                            onClick={handleClick}
-                            className={`px-2 py-1.5 text-xs font-bold rounded transition-colors duration-150 ${styleMap[type]}`}
-                        >
-                            {type}
-                        </button>
-                    );
-                })}
-            </div>
-        );
+    const handleNumberClick = (num: string) => {
+        if (focusedRecordId !== null) {
+            const record = records.find(r => r.id === focusedRecordId);
+            if (record) {
+                const currentValue = record.gameCount || '';
+                onUpdate(focusedRecordId, { gameCount: currentValue + num });
+            }
+        }
+    };
+
+    const handleBonusTypeClick = (type: BonusType) => {
+        if (focusedRecordId !== null) {
+            const record = records.find(r => r.id === focusedRecordId);
+            if (record) {
+                onUpdate(focusedRecordId, { 
+                    bonusType: record.bonusType === type ? BonusType.EMPTY : type 
+                });
+            }
+        }
+    };
+
+    const handleSeparatorClick = () => {
+        if (focusedRecordId !== null) {
+            const record = records.find(r => r.id === focusedRecordId);
+            if (record) {
+                onUpdate(focusedRecordId, { isSeparator: !record.isSeparator });
+            }
+        }
+    };
+
+    const handleBackspaceClick = () => {
+        if (focusedRecordId !== null) {
+            const record = records.find(r => r.id === focusedRecordId);
+            if (record && record.gameCount) {
+                onUpdate(focusedRecordId, { 
+                    gameCount: record.gameCount.slice(0, -1) 
+                });
+            }
+        }
+    };
+
+    const handleEnterClick = () => {
+        setShowNumpad(false);
+        setFocusedRecordId(null);
+    };
+
+    const handleNavigateClick = (direction: 'up' | 'down') => {
+        const currentIndex = records.findIndex(r => r.id === focusedRecordId);
+        if (currentIndex === -1) return;
+
+        if (direction === 'up' && currentIndex > 0) {
+            const prevRecord = records[currentIndex - 1];
+            setFocusedRecordId(prevRecord.id);
+            setTimeout(() => {
+                inputRefs.current[prevRecord.id]?.focus();
+            }, 50);
+        } else if (direction === 'down' && currentIndex < records.length - 1) {
+            const nextRecord = records[currentIndex + 1];
+            setFocusedRecordId(nextRecord.id);
+            setTimeout(() => {
+                inputRefs.current[nextRecord.id]?.focus();
+            }, 50);
+        }
+    };
+
+    const handleAddRowClick = (position: 'top' | 'bottom') => {
+        if (focusedRecordId === null) return;
+        
+        const currentIndex = records.findIndex(r => r.id === focusedRecordId);
+        if (currentIndex === -1) return;
+        
+        const newRecord: GameRecord = { 
+            id: Date.now() + Math.random(), 
+            gameCount: '', 
+            bonusType: BonusType.EMPTY, 
+            isSeparator: false 
+        };
+        
+        const newRecords = [...records];
+        if (position === 'top') {
+            newRecords.splice(currentIndex, 0, newRecord);
+        } else {
+            newRecords.splice(currentIndex + 1, 0, newRecord);
+        }
+        
+        if (onReorder) {
+            onReorder(newRecords);
+        }
+        
+        // 新しい行にフォーカス
+        setTimeout(() => {
+            setFocusedRecordId(newRecord.id);
+            setTimeout(() => {
+                inputRefs.current[newRecord.id]?.focus();
+            }, 100);
+        }, 50);
+    };
+
+    const handleCloseNumpad = () => {
+        setShowNumpad(false);
+        setFocusedRecordId(null);
     };
 
     return (
@@ -359,29 +457,27 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                 </td>
                                 <td className="p-2 text-center">
                                     <input 
-                                        type="number" 
+                                        ref={(el) => { inputRefs.current[record.id] = el; }}
+                                        type="text" 
+                                        inputMode="none"
                                         value={record.gameCount}
-                                        onChange={(e) => onUpdate(record.id, { gameCount: e.target.value })}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                const nextInput = e.currentTarget.closest('tr')?.nextElementSibling?.querySelector('input[type="number"]') as HTMLInputElement;
-                                                if (nextInput) {
-                                                    nextInput.focus();
-                                                    nextInput.select();
-                                                }
-                                            }
+                                        onFocus={() => {
+                                            setFocusedRecordId(record.id);
+                                            setShowNumpad(true);
                                         }}
+                                        readOnly
                                         className={`w-full px-2 py-1 text-center border rounded-md focus:ring-1 ${
                                             gameMode === 'BLACK' 
                                                 ? 'bg-gray-700 text-white border-gray-600 focus:ring-red-400 focus:border-red-400 placeholder-gray-400' 
                                                 : 'bg-white text-gray-900 border-gray-300 focus:ring-gold focus:border-gold placeholder-gray-500'
+                                        } ${
+                                            focusedRecordId === record.id ? 'ring-2 ring-blue-400' : ''
                                         }`}
                                         placeholder="G数"
                                     />
                                 </td>
                                 <td className="p-2 text-center">
-                                    <BonusTypeSelector record={record} />
+                                    <BonusTypeDisplay record={record} />
                                 </td>
                                 <td className={`p-2 text-center font-mono text-xs ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
                                     {record.favorableZoneStart}G
@@ -394,6 +490,20 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                     ))}
                 </tbody>
             </table>
+            
+            {showNumpad && (
+                <CustomNumpad
+                    onNumberClick={handleNumberClick}
+                    onBonusTypeClick={handleBonusTypeClick}
+                    onSeparatorClick={handleSeparatorClick}
+                    onEnterClick={handleEnterClick}
+                    onNavigateClick={handleNavigateClick}
+                    onBackspaceClick={handleBackspaceClick}
+                    onAddRowClick={handleAddRowClick}
+                    onClose={handleCloseNumpad}
+                    gameMode={gameMode}
+                />
+            )}
         </div>
     );
 };
