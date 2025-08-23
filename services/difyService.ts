@@ -208,7 +208,7 @@ export async function analyzeImageHistory(file: File): Promise<RawRecord[]> {
          throw new Error("API rate limit exceeded. Please wait and try again.");
     }
     if (error instanceof Error && error.message.includes('API_KEY')) {
-         throw new Error("Invalid API key. Please check your VITE_GEMINI_API_KEY in .env.local");
+         throw new Error("Invalid API key. Please check your VITE_DIFY_API_KEY in .env.local");
     }
     throw new Error(`Failed to process image with AI: ${error instanceof Error ? error.message : String(error)}`);
   }
