@@ -22,13 +22,20 @@ export const recalculateRecords = (records: GameRecord[], gameMode: GameMode = '
     const separatorIndexes = records.map((record, index) => record.isSeparator ? index : -1).filter(index => index !== -1);
     
     return records.map((record, index) => {
-        // 区切り行の上のセルから累積をリセット
-        // 区切り行のインデックスを確認し、そのインデックスでリセット
+        // 区切り行の場合は累積をリセットするが、セグメント番号はカウントしない
         if (separatorIndexes.includes(index)) {
             favorableZoneG = 0;
             segmentNum = 0;
+            
+            return {
+                ...record,
+                favorableZoneStart: 0,
+                favorableZoneEnd: 0,
+                segmentNumber: 0
+            };
         }
 
+        // データ行の場合のみセグメント番号をカウント
         segmentNum++;
         const currentGameCount = Number(record.gameCount) || 0;
         const bonusGames = bonusGameCounts[record.bonusType] || 0;

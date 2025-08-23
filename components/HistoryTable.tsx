@@ -291,7 +291,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                 <tbody className={gameMode === 'BLACK' ? 'bg-gray-800' : 'bg-white'}>
                     {records.map((record, index) => (
                         <React.Fragment key={record.id}>
-                            {record.isSeparator && (
+                            {record.isSeparator ? (
                                 <tr 
                                     data-index={index}
                                     className={`
@@ -331,64 +331,65 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                         </span>
                                     </td>
                                 </tr>
-                            )}
-                            <tr 
-                                data-index={index}
-                                className={`
-                                    ${gameMode === 'BLACK' ? 'border-b border-gray-600 hover:bg-gray-700' : 'border-b border-gray-200 hover:bg-gray-50'} 
-                                    ${!record.isSeparator && dragOverIndex === index ? 
-                                        `${gameMode === 'BLACK' ? 'bg-gradient-to-r from-blue-900 to-blue-800' : 'bg-gradient-to-r from-blue-100 to-cyan-100'} 
-                                         shadow-lg border-2 ${gameMode === 'BLACK' ? 'border-blue-400' : 'border-blue-500'} 
-                                         ring-2 ring-blue-300 ring-opacity-50 transition-all duration-200 transform scale-[1.02]` 
-                                        : 'transition-colors duration-150'
-                                    }
-                                `}
-                                onDragOver={(e) => !record.isSeparator && handleDragOver(e, index)}
-                                onDragLeave={handleDragLeave}
-                                onDrop={(e) => !record.isSeparator && handleDrop(e, index)}
-                            >
-                                <td className={`p-2 text-center ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-700'}`}>
-                                    {isDeleteMode ? (
-                                        <button onClick={() => onDelete(record.id)} className="w-full h-full flex items-center justify-center text-red-500 hover:text-red-700">
-                                            <TrashIcon className="w-5 h-5"/>
-                                        </button>
-                                    ) : (
-                                        record.segmentNumber
-                                    )}
-                                </td>
-                                <td className="p-2 text-center">
-                                    <input 
-                                        type="number" 
-                                        value={record.gameCount}
-                                        onChange={(e) => onUpdate(record.id, { gameCount: e.target.value })}
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                                e.preventDefault();
-                                                const nextInput = e.currentTarget.closest('tr')?.nextElementSibling?.querySelector('input[type="number"]') as HTMLInputElement;
-                                                if (nextInput) {
-                                                    nextInput.focus();
-                                                    nextInput.select();
+                            ) : (
+                                <tr 
+                                    data-index={index}
+                                    className={`
+                                        ${gameMode === 'BLACK' ? 'border-b border-gray-600 hover:bg-gray-700' : 'border-b border-gray-200 hover:bg-gray-50'} 
+                                        ${dragOverIndex === index ? 
+                                            `${gameMode === 'BLACK' ? 'bg-gradient-to-r from-blue-900 to-blue-800' : 'bg-gradient-to-r from-blue-100 to-cyan-100'} 
+                                             shadow-lg border-2 ${gameMode === 'BLACK' ? 'border-blue-400' : 'border-blue-500'} 
+                                             ring-2 ring-blue-300 ring-opacity-50 transition-all duration-200 transform scale-[1.02]` 
+                                            : 'transition-colors duration-150'
+                                        }
+                                    `}
+                                    onDragOver={(e) => handleDragOver(e, index)}
+                                    onDragLeave={handleDragLeave}
+                                    onDrop={(e) => handleDrop(e, index)}
+                                >
+                                    <td className={`p-2 text-center ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        {isDeleteMode ? (
+                                            <button onClick={() => onDelete(record.id)} className="w-full h-full flex items-center justify-center text-red-500 hover:text-red-700">
+                                                <TrashIcon className="w-5 h-5"/>
+                                            </button>
+                                        ) : (
+                                            record.segmentNumber
+                                        )}
+                                    </td>
+                                    <td className="p-2 text-center">
+                                        <input 
+                                            type="number" 
+                                            value={record.gameCount}
+                                            onChange={(e) => onUpdate(record.id, { gameCount: e.target.value })}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter') {
+                                                    e.preventDefault();
+                                                    const nextInput = e.currentTarget.closest('tr')?.nextElementSibling?.querySelector('input[type="number"]') as HTMLInputElement;
+                                                    if (nextInput) {
+                                                        nextInput.focus();
+                                                        nextInput.select();
+                                                    }
                                                 }
-                                            }
-                                        }}
-                                        className={`w-full px-2 py-1 text-center border rounded-md focus:ring-1 ${
-                                            gameMode === 'BLACK' 
-                                                ? 'bg-gray-700 text-white border-gray-600 focus:ring-red-400 focus:border-red-400 placeholder-gray-400' 
-                                                : 'bg-white text-gray-900 border-gray-300 focus:ring-gold focus:border-gold placeholder-gray-500'
-                                        }`}
-                                        placeholder="G数"
-                                    />
-                                </td>
-                                <td className="p-2 text-center">
-                                    <BonusTypeSelector record={record} />
-                                </td>
-                                <td className={`p-2 text-center font-mono text-xs ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    {record.favorableZoneStart}G
-                                </td>
-                                <td className={`p-2 text-center font-mono text-xs ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    {record.favorableZoneEnd}G
-                                </td>
-                            </tr>
+                                            }}
+                                            className={`w-full px-2 py-1 text-center border rounded-md focus:ring-1 ${
+                                                gameMode === 'BLACK' 
+                                                    ? 'bg-gray-700 text-white border-gray-600 focus:ring-red-400 focus:border-red-400 placeholder-gray-400' 
+                                                    : 'bg-white text-gray-900 border-gray-300 focus:ring-gold focus:border-gold placeholder-gray-500'
+                                            }`}
+                                            placeholder="G数"
+                                        />
+                                    </td>
+                                    <td className="p-2 text-center">
+                                        <BonusTypeSelector record={record} />
+                                    </td>
+                                    <td className={`p-2 text-center font-mono text-xs ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        {record.favorableZoneStart}G
+                                    </td>
+                                    <td className={`p-2 text-center font-mono text-xs ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        {record.favorableZoneEnd}G
+                                    </td>
+                                </tr>
+                            )}
                         </React.Fragment>
                     ))}
                 </tbody>
