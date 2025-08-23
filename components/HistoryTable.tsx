@@ -14,10 +14,12 @@ interface HistoryTableProps {
 }
 
 interface TouchData {
+  startX: number;
   startY: number;
   startTime: number;
   element: HTMLElement;
   index: number;
+  longPressTimer?: number;
 }
 
 const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUpdate, onDelete, onReorder, gameMode = 'GOLD' }) => {
@@ -26,6 +28,8 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
     const [dropSuccess, setDropSuccess] = React.useState<number | null>(null);
     const [touchData, setTouchData] = React.useState<TouchData | null>(null);
     const [isDragging, setIsDragging] = React.useState(false);
+    const [isLongPress, setIsLongPress] = React.useState(false);
+    const [dragPreview, setDragPreview] = React.useState<{x: number, y: number} | null>(null);
     
     // 区切り行をドラッグ開始
     const handleDragStart = (e: React.DragEvent<HTMLTableRowElement>, index: number) => {
@@ -65,63 +69,137 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
         setDragOverIndex(null);
     };
     
-    // タッチイベント（スマホ対応）
+    // バイブレーション関数
+    const triggerHapticFeedback = () => {
+        if ('vibrate' in navigator) {
+            navigator.vibrate(50); // 50ms の短いバイブレーション
+        }
+    };
+    
+    // タッチイベント（スマホ対応） - 長押しドラッグ
     const handleTouchStart = (e: React.TouchEvent<HTMLTableRowElement>, index: number) => {
         if (!records[index].isSeparator) return;
         
         const touch = e.touches[0];
         const element = e.currentTarget;
+        
+        // 長押しタイマーを設定
+        const longPressTimer = window.setTimeout(() => {
+            setIsLongPress(true);
+            setDraggedSeparatorIndex(index);
+            triggerHapticFeedback();
+            
+            // 長押し成功時の視覚的フィードバック
+            element.style.transform = 'scale(1.1)';
+            element.style.opacity = '0.9';
+            element.style.boxShadow = '0 8px 25px rgba(0,0,0,0.3)';
+            element.style.zIndex = '1000';
+            element.style.transition = 'all 0.2s ease-out';
+        }, 500); // 500ms の長押し
+        
         setTouchData({
+            startX: touch.clientX,
             startY: touch.clientY,
             startTime: Date.now(),
             element,
-            index
+            index,
+            longPressTimer
         });
-        setDraggedSeparatorIndex(index);
         setIsDragging(false);
     };
     
     const handleTouchMove = (e: React.TouchEvent<HTMLTableRowElement>) => {
         if (!touchData) return;
         
-        e.preventDefault(); // スクロール防止
         const touch = e.touches[0];
+        const deltaX = Math.abs(touch.clientX - touchData.startX);
         const deltaY = Math.abs(touch.clientY - touchData.startY);
+        const totalDelta = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
         
-        // 一定距離移動したらドラッグ開始
-        if (deltaY > 10 && !isDragging) {
-            setIsDragging(true);
-            touchData.element.style.transform = 'scale(1.05)';
-            touchData.element.style.opacity = '0.8';
-            touchData.element.style.zIndex = '1000';
+        // 長押し中に大きく動いた場合は長押しをキャンセル
+        if (totalDelta > 15 && !isLongPress) {
+            if (touchData.longPressTimer) {
+                clearTimeout(touchData.longPressTimer);
+            }
+            resetTouchState();
+            return;
         }
         
-        if (isDragging) {
+        // 長押しが完了している場合のみドラッグを許可
+        if (isLongPress) {
+            e.preventDefault(); // スクロール防止
+            setIsDragging(true);
+            
             // ドラッグ中の要素を移動
-            touchData.element.style.transform = `translate(0, ${touch.clientY - touchData.startY}px) scale(1.05)`;
+            const offsetY = touch.clientY - touchData.startY;
+            touchData.element.style.transform = `translateY(${offsetY}px) scale(1.1)`;
+            touchData.element.style.transition = 'none'; // ドラッグ中はトランジション無効
             
-            // ドロップ位置を検出
-            const elements = document.elementsFromPoint(touch.clientX, touch.clientY);
-            const targetRow = elements.find(el => el.tagName === 'TR' && el !== touchData.element) as HTMLTableRowElement;
+            // 仮想的なドラッグプレビューを設定
+            setDragPreview({
+                x: touch.clientX,
+                y: touch.clientY
+            });
             
-            if (targetRow) {
-                const targetIndex = parseInt(targetRow.dataset.index || '-1');
-                if (targetIndex >= 0 && targetIndex !== touchData.index) {
-                    setDragOverIndex(targetIndex);
+            // より正確なドロップ位置検出
+            const tableRect = touchData.element.closest('table')?.getBoundingClientRect();
+            if (tableRect) {
+                const rows = Array.from(touchData.element.closest('tbody')?.querySelectorAll('tr') || []);
+                let bestTargetIndex = -1;
+                let bestDistance = Infinity;
+                
+                rows.forEach((row, idx) => {
+                    const rect = row.getBoundingClientRect();
+                    const rowCenterY = rect.top + rect.height / 2;
+                    const distance = Math.abs(touch.clientY - rowCenterY);
+                    
+                    if (distance < bestDistance && idx !== touchData.index) {
+                        bestDistance = distance;
+                        bestTargetIndex = idx;
+                    }
+                });
+                
+                if (bestTargetIndex >= 0 && bestDistance < 50) { // 50px以内で有効
+                    setDragOverIndex(bestTargetIndex);
+                } else {
+                    setDragOverIndex(null);
                 }
             }
         }
     };
     
+    const resetTouchState = () => {
+        if (touchData) {
+            // スタイルをリセット
+            touchData.element.style.transform = '';
+            touchData.element.style.opacity = '';
+            touchData.element.style.boxShadow = '';
+            touchData.element.style.zIndex = '';
+            touchData.element.style.transition = '';
+            
+            if (touchData.longPressTimer) {
+                clearTimeout(touchData.longPressTimer);
+            }
+        }
+        
+        setTouchData(null);
+        setDraggedSeparatorIndex(null);
+        setDragOverIndex(null);
+        setIsDragging(false);
+        setIsLongPress(false);
+        setDragPreview(null);
+    };
+    
     const handleTouchEnd = (e: React.TouchEvent<HTMLTableRowElement>) => {
         if (!touchData) return;
         
-        // スタイルをリセット
-        touchData.element.style.transform = '';
-        touchData.element.style.opacity = '';
-        touchData.element.style.zIndex = '';
+        // 長押しタイマーをクリア
+        if (touchData.longPressTimer) {
+            clearTimeout(touchData.longPressTimer);
+        }
         
-        if (isDragging && dragOverIndex !== null && dragOverIndex !== touchData.index && onReorder) {
+        // ドラッグ完了の場合
+        if (isLongPress && isDragging && dragOverIndex !== null && dragOverIndex !== touchData.index && onReorder) {
             // ドロップ処理
             const newRecords = [...records];
             const [draggedRecord] = newRecords.splice(touchData.index, 1);
@@ -130,26 +208,36 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
             setDropSuccess(dragOverIndex);
             setTimeout(() => setDropSuccess(null), 1000);
             onReorder(newRecords);
+            
+            triggerHapticFeedback(); // 成功時のフィードバック
+        } else if (isLongPress) {
+            // 長押ししたが有効なドロップ位置がない場合のアニメーション
+            touchData.element.style.transition = 'all 0.3s ease-out';
+            touchData.element.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                if (touchData.element) {
+                    touchData.element.style.transform = '';
+                }
+            }, 150);
         }
         
         // 状態をリセット
-        setTouchData(null);
-        setDraggedSeparatorIndex(null);
-        setDragOverIndex(null);
-        setIsDragging(false);
+        setTimeout(resetTouchState, 100); // 少し遅延してリセット
     };
     
-    // 上下移動ボタンの処理
-    const handleMove = (index: number, direction: 'up' | 'down') => {
-        if (!onReorder) return;
-        
-        const newIndex = direction === 'up' ? index - 1 : index + 1;
-        if (newIndex < 0 || newIndex >= records.length) return;
-        
-        const newRecords = [...records];
-        [newRecords[index], newRecords[newIndex]] = [newRecords[newIndex], newRecords[index]];
-        onReorder(newRecords);
+    const handleTouchCancel = (e: React.TouchEvent<HTMLTableRowElement>) => {
+        resetTouchState();
     };
+    
+    // クリーンアップ効果
+    React.useEffect(() => {
+        return () => {
+            // コンポーネントアンマウント時にタイマーをクリア
+            if (touchData?.longPressTimer) {
+                clearTimeout(touchData.longPressTimer);
+            }
+        };
+    }, [touchData]);
     
     const BonusTypeSelector: React.FC<{ record: GameRecord }> = ({ record }) => {
         const types: BonusType[] = [BonusType.BB, BonusType.RB, BonusType.CURRENT, BonusType.SEPARATOR];
@@ -196,9 +284,8 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                         <th className="w-12 p-2 text-sm font-semibold text-center">回</th>
                         <th className="w-24 p-2 text-sm font-semibold text-center">Ｇ数</th>
                         <th className="w-32 p-2 text-sm font-semibold text-center">種</th>
-                        <th className="w-20 p-2 text-sm font-semibold text-center">有利開始</th>
-                        <th className="w-20 p-2 text-sm font-semibold text-center">終了</th>
-                        <th className="w-16 p-2 text-sm font-semibold text-center">操作</th>
+                        <th className="w-24 p-2 text-sm font-semibold text-center">有利開始</th>
+                        <th className="w-24 p-2 text-sm font-semibold text-center">終了</th>
                     </tr>
                 </thead>
                 <tbody className={gameMode === 'BLACK' ? 'bg-gray-800' : 'bg-white'}>
@@ -209,11 +296,13 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                     data-index={index}
                                     className={`
                                         ${gameMode === 'BLACK' ? 'bg-gray-600' : 'bg-gray-200'} 
-                                        ${draggedSeparatorIndex === index ? 'opacity-40 scale-105' : ''} 
-                                        ${dropSuccess === index ? 'animate-pulse bg-green-400 scale-110' : ''}
-                                        cursor-move transition-all duration-300 hover:shadow-lg relative
-                                        ${draggedSeparatorIndex !== null && draggedSeparatorIndex !== index ? 'hover:scale-[1.02]' : ''}
+                                        ${draggedSeparatorIndex === index ? 'opacity-70' : ''} 
+                                        ${dropSuccess === index ? 'animate-bounce bg-green-400 scale-110' : ''}
+                                        ${isLongPress && draggedSeparatorIndex === index ? 'shadow-2xl ring-4 ring-blue-400 ring-opacity-50' : ''}
+                                        cursor-move transition-all duration-200 hover:shadow-lg relative
+                                        ${!isLongPress ? 'hover:scale-[1.02] hover:shadow-md' : ''}
                                         touch-none select-none
+                                        ${isDragging && draggedSeparatorIndex === index ? 'z-50' : ''}
                                     `}
                                     draggable={true}
                                     onDragStart={(e) => handleDragStart(e, index)}
@@ -223,8 +312,9 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                     onTouchStart={(e) => handleTouchStart(e, index)}
                                     onTouchMove={handleTouchMove}
                                     onTouchEnd={handleTouchEnd}
+                                    onTouchCancel={handleTouchCancel}
                                 >
-                                    <td colSpan={6} className={`
+                                    <td colSpan={5} className={`
                                         text-center py-1 text-sm font-semibold italic 
                                         ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'} 
                                         ${dragOverIndex === index ? 'bg-gradient-to-r from-blue-400 to-cyan-400 bg-opacity-30 animate-pulse' : ''}
@@ -247,8 +337,9 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                 className={`
                                     ${gameMode === 'BLACK' ? 'border-b border-gray-600 hover:bg-gray-700' : 'border-b border-gray-200 hover:bg-gray-50'} 
                                     ${!record.isSeparator && dragOverIndex === index ? 
-                                        `${gameMode === 'BLACK' ? 'bg-gradient-to-r from-gray-700 to-gray-600' : 'bg-gradient-to-r from-blue-50 to-cyan-50'} 
-                                         shadow-inner border-2 ${gameMode === 'BLACK' ? 'border-blue-500' : 'border-blue-400'} transition-all duration-300` 
+                                        `${gameMode === 'BLACK' ? 'bg-gradient-to-r from-blue-900 to-blue-800' : 'bg-gradient-to-r from-blue-100 to-cyan-100'} 
+                                         shadow-lg border-2 ${gameMode === 'BLACK' ? 'border-blue-400' : 'border-blue-500'} 
+                                         ring-2 ring-blue-300 ring-opacity-50 transition-all duration-200 transform scale-[1.02]` 
                                         : 'transition-colors duration-150'
                                     }
                                 `}
@@ -296,36 +387,6 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                 </td>
                                 <td className={`p-2 text-center font-mono text-xs ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
                                     {record.favorableZoneEnd}G
-                                </td>
-                                <td className="p-1 text-center">
-                                    {record.isSeparator && (
-                                        <div className="flex flex-col gap-1">
-                                            <button
-                                                onClick={() => handleMove(index, 'up')}
-                                                disabled={index === 0}
-                                                className={`px-2 py-1 text-xs rounded transition-colors ${
-                                                    index === 0
-                                                        ? 'opacity-30 cursor-not-allowed'
-                                                        : `hover:bg-blue-200 ${gameMode === 'BLACK' ? 'text-gray-300 hover:text-gray-800' : 'text-gray-600'}`
-                                                }`}
-                                                title="上に移動"
-                                            >
-                                                ▲
-                                            </button>
-                                            <button
-                                                onClick={() => handleMove(index, 'down')}
-                                                disabled={index === records.length - 1}
-                                                className={`px-2 py-1 text-xs rounded transition-colors ${
-                                                    index === records.length - 1
-                                                        ? 'opacity-30 cursor-not-allowed'
-                                                        : `hover:bg-blue-200 ${gameMode === 'BLACK' ? 'text-gray-300 hover:text-gray-800' : 'text-gray-600'}`
-                                                }`}
-                                                title="下に移動"
-                                            >
-                                                ▼
-                                            </button>
-                                        </div>
-                                    )}
                                 </td>
                             </tr>
                         </React.Fragment>
