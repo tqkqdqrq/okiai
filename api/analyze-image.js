@@ -42,24 +42,39 @@ export default async function handler(req, res) {
     // Base64データをBufferに変換
     const buffer = Buffer.from(fileData, 'base64');
     
-    // FormDataを作成
-    const FormData = require('form-data');
-    const form = new FormData();
-    form.append('file', buffer, {
-      filename: fileName || 'image.png',
-      contentType: fileType || 'image/png'
-    });
-    form.append('user', 'pachislot-calculator');
-
-    // Step 1: ファイルをアップロード
+    // Step 1: ファイルをアップロード（multipart/form-dataを手動構築）
     console.log('📤 Uploading file to Dify...');
+    
+    const boundary = `----formdata-${Math.random().toString(36).substring(2)}`;
+    const CRLF = '\r\n';
+    
+    // マルチパートフォームデータを手動構築
+    let body = '';
+    body += `--${boundary}${CRLF}`;
+    body += `Content-Disposition: form-data; name="file"; filename="${fileName || 'image.png'}"${CRLF}`;
+    body += `Content-Type: ${fileType || 'image/png'}${CRLF}`;
+    body += CRLF;
+    
+    // バイナリデータ部分
+    const textEncoder = new TextEncoder();
+    const textDecoder = new TextDecoder();
+    
+    const formPrefix = textEncoder.encode(body);
+    const formSuffix = textEncoder.encode(`${CRLF}--${boundary}${CRLF}Content-Disposition: form-data; name="user"${CRLF}${CRLF}pachislot-calculator${CRLF}--${boundary}--${CRLF}`);
+    
+    // 完全なボディを構築
+    const fullBody = new Uint8Array(formPrefix.length + buffer.length + formSuffix.length);
+    fullBody.set(formPrefix, 0);
+    fullBody.set(buffer, formPrefix.length);
+    fullBody.set(formSuffix, formPrefix.length + buffer.length);
+
     const uploadResponse = await fetch(`${BASE_URL}/files/upload`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
-        ...form.getHeaders()
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
       },
-      body: form
+      body: fullBody
     });
 
     if (!uploadResponse.ok) {
