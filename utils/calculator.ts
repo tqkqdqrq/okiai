@@ -24,13 +24,22 @@ export const recalculateRecords = (records: GameRecord[], gameMode: GameMode = '
     return records.map((record, index) => {
         // 区切り行の場合は累積をリセットし、区切り行自体を1回目として表示
         if (separatorIndexes.includes(index)) {
-            favorableZoneG = 0;
+            favorableZoneG = 0;  // 累積はリセット
             segmentNum = 1;  // 区切り行を1回目として設定
+            
+            // 区切り行でも通常の計算を行う
+            const currentGameCount = Number(record.gameCount) || 0;
+            const bonusGames = bonusGameCounts[record.bonusType] || 0;
+            
+            const favorableZoneStart = favorableZoneG + currentGameCount;
+            const favorableZoneEnd = favorableZoneStart + bonusGames;
+            
+            favorableZoneG = favorableZoneEnd;  // 次の行のために更新
             
             return {
                 ...record,
-                favorableZoneStart: 0,
-                favorableZoneEnd: 0,
+                favorableZoneStart,
+                favorableZoneEnd,
                 segmentNumber: 1
             };
         }
