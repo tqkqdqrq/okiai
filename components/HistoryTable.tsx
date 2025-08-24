@@ -268,16 +268,6 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
     }, [touchData]);
     
     const BonusTypeDisplay: React.FC<{ record: GameRecord }> = ({ record }) => {
-        if (record.isSeparator) {
-            return (
-                <span className={`inline-block px-1 sm:px-2 py-0.5 text-[10px] sm:text-xs font-bold rounded ${
-                    gameMode === 'BLACK' ? 'bg-green-800 text-green-200' : 'bg-green-600 text-white'
-                }`}>
-                    区切
-                </span>
-            );
-        }
-        
         const typeDisplay = {
             [BonusType.BB]: { text: 'BB', className: gameMode === 'BLACK' ? 'bg-red-800 text-red-200' : 'bg-red-600 text-white' },
             [BonusType.RB]: { text: 'RB', className: gameMode === 'BLACK' ? 'bg-blue-800 text-blue-200' : 'bg-blue-600 text-white' },
