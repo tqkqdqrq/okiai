@@ -120,7 +120,8 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
       buttonHeight: `${32 * adjustedScale}px`,
       buttonPadding: `${4 * adjustedScale}px ${8 * adjustedScale}px`,
       fontSize: `${14 * adjustedScale}px`,
-      gap: `${4 * adjustedScale}px`,
+      buttonGap: `${4 * adjustedScale}px`, // ボタン間の間隔
+      sectionGap: '1px', // セクション間の最小間隔
       iconSize: `${16 * adjustedScale}px`,
       specialButtonHeight: `${28 * adjustedScale}px`,
       specialFontSize: `${12 * adjustedScale}px`
@@ -224,11 +225,11 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
           style={{ 
             paddingTop: '30px', 
             paddingBottom: '5px',
-            gap: styles.gap
+            gap: styles.sectionGap
           }}
         >
           {/* 行追加ボタン */}
-          <div className="grid grid-cols-2" style={{ gap: styles.gap }}>
+          <div className="grid grid-cols-2" style={{ gap: styles.buttonGap }}>
             <button
               onTouchEnd={(e) => handleTouchEnd(e, () => onAddRowClick('top'))}
               onClick={() => onAddRowClick('top')}
@@ -256,7 +257,7 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
           </div>
 
           {/* 特殊ボタン行 */}
-          <div className="grid grid-cols-4" style={{ gap: styles.gap }}>
+          <div className="grid grid-cols-4" style={{ gap: styles.buttonGap }}>
             <button
               onTouchEnd={(e) => handleTouchEnd(e, () => onBonusTypeClick(BonusType.BB))}
               onClick={() => onBonusTypeClick(BonusType.BB)}
@@ -308,7 +309,7 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
           </div>
 
           {/* 数字キーと操作ボタン */}
-          <div className="grid grid-cols-4" style={{ gap: styles.gap }}>
+          <div className="grid grid-cols-4" style={{ gap: styles.buttonGap }}>
             {/* 1-3 */}
             <button
               onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('1'))}
