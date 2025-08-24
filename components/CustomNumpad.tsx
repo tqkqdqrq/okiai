@@ -290,7 +290,7 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
             </svg>
           </button>
 
-          {/* 行2: [RB][4][5][6][下追加] */}
+          {/* 行2: [RB][4][5][6][↑] */}
           <button
             onTouchEnd={(e) => handleTouchEnd(e, () => onBonusTypeClick(BonusType.RB))}
             onClick={() => onBonusTypeClick(BonusType.RB)}
@@ -340,19 +340,19 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
             6
           </button>
           <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onAddRowClick('bottom'))}
-            onClick={() => onAddRowClick('bottom')}
-            className={addRowButtonClass}
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNavigateClick('up'))}
+            onClick={() => onNavigateClick('up')}
+            className={navigationButtonClass}
             style={{ 
               height: styles.buttonHeight,
               width: styles.buttonWidth,
               fontSize: styles.fontSize
             }}
           >
-            <span>下追加</span>
+            ↑
           </button>
 
-          {/* 行3: [現在][7][8][9][上追加] */}
+          {/* 行3: [現在][7][8][9][↓] */}
           <button
             onTouchEnd={(e) => handleTouchEnd(e, () => onBonusTypeClick(BonusType.CURRENT))}
             onClick={() => onBonusTypeClick(BonusType.CURRENT)}
@@ -402,19 +402,19 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
             9
           </button>
           <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onAddRowClick('top'))}
-            onClick={() => onAddRowClick('top')}
-            className={addRowButtonClass}
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNavigateClick('down'))}
+            onClick={() => onNavigateClick('down')}
+            className={navigationButtonClass}
             style={{ 
               height: styles.buttonHeight,
               width: styles.buttonWidth,
               fontSize: styles.fontSize
             }}
           >
-            <span>上追加</span>
+            ↓
           </button>
 
-          {/* 行4: [区切り][↑][0][↓][確定] */}
+          {/* 行4: [区切り][上追加][下追加][0][確定] */}
           <button
             onTouchEnd={(e) => handleTouchEnd(e, onSeparatorClick)}
             onClick={onSeparatorClick}
@@ -428,16 +428,28 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
             区切り
           </button>
           <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNavigateClick('up'))}
-            onClick={() => onNavigateClick('up')}
-            className={navigationButtonClass}
+            onTouchEnd={(e) => handleTouchEnd(e, () => onAddRowClick('top'))}
+            onClick={() => onAddRowClick('top')}
+            className={addRowButtonClass}
             style={{ 
               height: styles.buttonHeight,
               width: styles.buttonWidth,
               fontSize: styles.fontSize
             }}
           >
-            ↑
+            <span>上追加</span>
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onAddRowClick('bottom'))}
+            onClick={() => onAddRowClick('bottom')}
+            className={addRowButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            <span>下追加</span>
           </button>
           <button
             onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('0'))}
@@ -450,18 +462,6 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
             }}
           >
             0
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNavigateClick('down'))}
-            onClick={() => onNavigateClick('down')}
-            className={navigationButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            ↓
           </button>
           <button
             onTouchEnd={(e) => handleTouchEnd(e, onEnterClick)}
