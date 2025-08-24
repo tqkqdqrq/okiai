@@ -390,6 +390,19 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
         onNumpadToggle?.(false);
     };
 
+    const handleClearAll = () => {
+        if (focusedRecordId !== null) {
+            const record = records.find(r => r.id === focusedRecordId);
+            if (record) {
+                onUpdate(focusedRecordId, { 
+                    gameCount: '',
+                    bonusType: BonusType.EMPTY,
+                    isSeparator: false
+                });
+            }
+        }
+    };
+
     return (
         <div className="w-full">
             <table className="w-full border-collapse">
@@ -523,6 +536,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                     onBackspaceClick={handleBackspaceClick}
                     onAddRowClick={handleAddRowClick}
                     onClose={handleCloseNumpad}
+                    onClearAll={handleClearAll}
                     gameMode={gameMode}
                 />
             )}

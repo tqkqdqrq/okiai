@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { BonusType } from '../types';
 
 interface CustomNumpadProps {
@@ -10,6 +10,7 @@ interface CustomNumpadProps {
   onBackspaceClick: () => void;
   onAddRowClick: (position: 'top' | 'bottom') => void;
   onClose: () => void;
+  onClearAll: () => void;
   gameMode: 'GOLD' | 'BLACK';
 }
 
@@ -22,8 +23,17 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
   onBackspaceClick,
   onAddRowClick,
   onClose,
+  onClearAll,
   gameMode
 }) => {
+  const [numpadSize, setNumpadSize] = useState(() => {
+    const saved = localStorage.getItem('numpadSize');
+    return saved ? JSON.parse(saved) : { width: 320, height: 400 };
+  });
+  const [isResizing, setIsResizing] = useState(false);
+  const numpadRef = useRef<HTMLDivElement>(null);
+  const resizeRef = useRef<HTMLDivElement>(null);
+  const startPosRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
   const baseButtonClass = `
     font-bold rounded-lg transition-all duration-150 
     active:scale-95 select-none cursor-pointer
@@ -98,13 +108,91 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
     callback();
   };
 
+  // リサイズ機能
+  useEffect(() => {
+    localStorage.setItem('numpadSize', JSON.stringify(numpadSize));
+  }, [numpadSize]);
+
+  const startResize = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    
+    startPosRef.current = {
+      x: clientX,
+      y: clientY,
+      width: numpadSize.width,
+      height: numpadSize.height
+    };
+  };
+
+  useEffect(() => {
+    const handleResize = (e: MouseEvent | TouchEvent) => {
+      if (!isResizing) return;
+      
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+      
+      const deltaX = clientX - startPosRef.current.x;
+      const deltaY = clientY - startPosRef.current.y;
+      
+      const newWidth = Math.max(280, Math.min(500, startPosRef.current.width + deltaX));
+      const newHeight = Math.max(350, Math.min(600, startPosRef.current.height + deltaY));
+      
+      setNumpadSize({ width: newWidth, height: newHeight });
+    };
+
+    const stopResize = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener('mousemove', handleResize);
+      document.addEventListener('mouseup', stopResize);
+      document.addEventListener('touchmove', handleResize);
+      document.addEventListener('touchend', stopResize);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleResize);
+      document.removeEventListener('mouseup', stopResize);
+      document.removeEventListener('touchmove', handleResize);
+      document.removeEventListener('touchend', stopResize);
+    };
+  }, [isResizing]);
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50">
-        <div className={`
-          ${gameMode === 'BLACK' ? 'bg-gray-900' : 'bg-gray-50'} 
-          border-t ${gameMode === 'BLACK' ? 'border-gray-700' : 'border-gray-300'}
-          shadow-lg p-2 sm:p-3 pb-safe
-        `}>
+    <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 z-50">
+        <div 
+          ref={numpadRef}
+          className={`
+            ${gameMode === 'BLACK' ? 'bg-gray-900' : 'bg-gray-50'} 
+            border ${gameMode === 'BLACK' ? 'border-gray-700' : 'border-gray-300'}
+            shadow-lg p-2 sm:p-3 pb-safe rounded-t-lg relative
+            ${isResizing ? 'select-none' : ''}
+          `}
+          style={{
+            width: `${numpadSize.width}px`,
+            height: `${numpadSize.height}px`,
+            transition: isResizing ? 'none' : 'all 0.3s ease'
+          }}
+        >
+        {/* 全クリアボタン */}
+        <button
+          onClick={onClearAll}
+          className={`
+            absolute top-2 right-12 p-2 rounded-full
+            ${gameMode === 'BLACK' ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}
+          `}
+          title="全クリア"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+        
         {/* クローズボタン */}
         <button
           onClick={onClose}
@@ -113,12 +201,30 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
             ${gameMode === 'BLACK' ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-600'}
           `}
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
+        
+        {/* リサイズハンドル */}
+        <div
+          ref={resizeRef}
+          className={`
+            absolute bottom-1 right-1 w-6 h-6 cursor-se-resize
+            ${gameMode === 'BLACK' ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}
+            flex items-center justify-center rounded-full
+            ${isResizing ? 'bg-blue-500 text-white' : 'hover:bg-gray-200'}
+          `}
+          onMouseDown={startResize}
+          onTouchStart={startResize}
+          title="ドラッグでサイズ調整"
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M22,22H20V20H22V22M22,18H20V16H22V18M18,22H16V20H18V22M18,18H16V16H18V18M14,22H12V20H14V22M22,14H20V12H22V14Z" />
+          </svg>
+        </div>
 
-        <div className="grid gap-1 sm:gap-2 max-w-sm sm:max-w-md mx-auto">
+        <div className="grid gap-1 sm:gap-2 h-full overflow-auto" style={{ paddingTop: '40px', paddingBottom: '30px' }}>
           {/* 行追加ボタン */}
           <div className="grid grid-cols-2 gap-1 sm:gap-2 mb-1 sm:mb-2">
             <button
