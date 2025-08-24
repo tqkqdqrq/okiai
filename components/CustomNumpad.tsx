@@ -42,13 +42,13 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
   const numberButtonClass = `
     ${baseButtonClass}
     ${gameMode === 'BLACK' 
-      ? 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600' 
-      : 'bg-white hover:bg-gray-100 text-gray-800 border border-gray-300'}
+      ? 'bg-gray-700 hover:bg-gray-600 text-white border-2 border-transparent hover:border-gray-400' 
+      : 'bg-white hover:bg-gray-100 text-gray-800 border-2 border-transparent hover:border-gray-500'}
   `;
 
   const specialButtonClass = `
     ${baseButtonClass}
-    font-semibold
+    font-semibold border-2 border-transparent
   `;
 
   const bonusButtonStyles = {
@@ -66,37 +66,37 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
   const separatorButtonClass = `
     ${specialButtonClass}
     ${gameMode === 'BLACK'
-      ? 'bg-green-700 hover:bg-green-600 text-white'
-      : 'bg-green-500 hover:bg-green-600 text-white'}
+      ? 'bg-green-700 hover:bg-green-600 text-white hover:border-green-400'
+      : 'bg-green-500 hover:bg-green-600 text-white hover:border-green-300'}
   `;
 
   const actionButtonClass = `
     ${specialButtonClass}
     ${gameMode === 'BLACK'
-      ? 'bg-gray-600 hover:bg-gray-500 text-white'
-      : 'bg-gray-500 hover:bg-gray-600 text-white'}
+      ? 'bg-gray-600 hover:bg-gray-500 text-white hover:border-gray-400'
+      : 'bg-gray-500 hover:bg-gray-600 text-white hover:border-gray-500'}
   `;
 
   const navigationButtonClass = `
     ${baseButtonClass}
     ${gameMode === 'BLACK'
-      ? 'bg-indigo-700 hover:bg-indigo-600 text-white'
-      : 'bg-indigo-500 hover:bg-indigo-600 text-white'}
+      ? 'bg-indigo-700 hover:bg-indigo-600 text-white border-2 border-transparent hover:border-indigo-400'
+      : 'bg-indigo-500 hover:bg-indigo-600 text-white border-2 border-transparent hover:border-indigo-300'}
   `;
 
   const enterButtonClass = `
     ${baseButtonClass}
     ${gameMode === 'BLACK'
-      ? 'bg-blue-700 hover:bg-blue-600 text-white'
-      : 'bg-blue-600 hover:bg-blue-700 text-white'}
+      ? 'bg-blue-700 hover:bg-blue-600 text-white border-2 border-transparent hover:border-blue-400'
+      : 'bg-blue-600 hover:bg-blue-700 text-white border-2 border-transparent hover:border-blue-400'}
     font-bold
   `;
 
   const addRowButtonClass = `
     ${baseButtonClass}
     ${gameMode === 'BLACK'
-      ? 'bg-purple-700 hover:bg-purple-600 text-white'
-      : 'bg-purple-500 hover:bg-purple-600 text-white'}
+      ? 'bg-purple-700 hover:bg-purple-600 text-white border-2 border-transparent hover:border-purple-400'
+      : 'bg-purple-500 hover:bg-purple-600 text-white border-2 border-transparent hover:border-purple-300'}
     font-semibold
   `;
 
@@ -105,26 +105,22 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
     callback();
   };
 
-  // サイズに応じたスタイルを計算
+  // デッドスペースゼロの完全フィット計算 4行×5列
   const getResponsiveStyles = () => {
-    const baseWidth = 300; // ベースサイズ
-    const baseHeight = 380;
-    const scale = Math.min(numpadSize.width / baseWidth, numpadSize.height / baseHeight);
+    // 4行×5列の完全グリッドでデッドスペースゼロ
+    const buttonHeight = `${numpadSize.height / 4}px`;
+    const buttonWidth = `${numpadSize.width / 5}px`;
     
-    // 最小スケールを設定してボタンが小さくなりすぎないようにする
-    const minScale = 0.6;
-    const maxScale = 1.5;
-    const adjustedScale = Math.max(minScale, Math.min(maxScale, scale));
+    // フォントサイズは高さに比例
+    const fontSize = `${Math.max(10, numpadSize.height / 24)}px`;
+    const iconSize = `${Math.max(12, numpadSize.height / 20)}px`;
     
     return {
-      buttonHeight: `${32 * adjustedScale}px`,
-      buttonPadding: `${4 * adjustedScale}px ${8 * adjustedScale}px`,
-      fontSize: `${14 * adjustedScale}px`,
-      buttonGap: `${4 * adjustedScale}px`, // ボタン間の間隔
-      sectionGap: '1px', // セクション間の最小間隔
-      iconSize: `${16 * adjustedScale}px`,
-      specialButtonHeight: `${28 * adjustedScale}px`,
-      specialFontSize: `${12 * adjustedScale}px`
+      buttonHeight,
+      buttonWidth,
+      fontSize,
+      iconSize,
+      buttonGap: '0px'
     };
   };
   
@@ -198,300 +194,287 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
           style={{
             width: `${numpadSize.width}px`,
             height: `${numpadSize.height}px`,
-            transition: isResizing ? 'none' : 'all 0.3s ease',
-            padding: `${parseInt(styles.gap) * 2}px`
+            transition: isResizing ? 'none' : 'all 0.3s ease'
           }}
         >
-        {/* リサイズハンドル */}
+        {/* オーバーレイリサイズハンドル */}
         <div
           ref={resizeRef}
           className={`
-            absolute top-2 right-2 w-6 h-6 cursor-se-resize
+            absolute top-0 right-0 w-8 h-8 cursor-se-resize z-10
             ${gameMode === 'BLACK' ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}
-            flex items-center justify-center rounded-full
-            ${isResizing ? 'bg-blue-500 text-white' : 'hover:bg-gray-200'}
+            flex items-center justify-center
+            ${isResizing ? 'bg-blue-500 text-white opacity-80' : 'bg-black bg-opacity-20 hover:bg-opacity-40'}
+            rounded-bl-lg
           `}
           onMouseDown={startResize}
           onTouchStart={startResize}
           title="ドラッグでサイズ調整"
         >
-          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
             <path d="M22,22H20V20H22V22M22,18H20V16H22V18M18,22H16V20H18V22M18,18H16V16H18V18M14,22H12V20H14V22M22,14H20V12H22V14Z" />
           </svg>
         </div>
 
         <div 
-          className="grid h-full" 
+          className="grid grid-cols-5 grid-rows-4 w-full h-full" 
           style={{ 
-            paddingTop: '30px', 
-            paddingBottom: '5px',
-            gap: styles.sectionGap
+            gap: styles.buttonGap
           }}
         >
-          {/* 行追加ボタン */}
-          <div className="grid grid-cols-2" style={{ gap: styles.buttonGap }}>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onAddRowClick('top'))}
-              onClick={() => onAddRowClick('top')}
-              className={addRowButtonClass}
-              style={{ 
-                height: styles.specialButtonHeight, 
-                fontSize: styles.specialFontSize,
-                padding: styles.buttonPadding
-              }}
+          {/* 行1: [BB][1][2][3][BS] */}
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onBonusTypeClick(BonusType.BB))}
+            onClick={() => onBonusTypeClick(BonusType.BB)}
+            className={`${specialButtonClass} ${bonusButtonStyles[BonusType.BB]}`}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            BB
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('1'))}
+            onClick={() => onNumberClick('1')}
+            className={numberButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            1
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('2'))}
+            onClick={() => onNumberClick('2')}
+            className={numberButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            2
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('3'))}
+            onClick={() => onNumberClick('3')}
+            className={numberButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            3
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, onBackspaceClick)}
+            onClick={onBackspaceClick}
+            className={actionButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth
+            }}
+          >
+            <svg 
+              style={{ width: styles.iconSize, height: styles.iconSize }} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
             >
-              <span>上に行追加</span>
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onAddRowClick('bottom'))}
-              onClick={() => onAddRowClick('bottom')}
-              className={addRowButtonClass}
-              style={{ 
-                height: styles.specialButtonHeight, 
-                fontSize: styles.specialFontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              <span>下に行追加</span>
-            </button>
-          </div>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" />
+            </svg>
+          </button>
 
-          {/* 特殊ボタン行 */}
-          <div className="grid grid-cols-4" style={{ gap: styles.buttonGap }}>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onBonusTypeClick(BonusType.BB))}
-              onClick={() => onBonusTypeClick(BonusType.BB)}
-              className={`${specialButtonClass} ${bonusButtonStyles[BonusType.BB]}`}
-              style={{ 
-                height: styles.specialButtonHeight, 
-                fontSize: styles.specialFontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              BB
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onBonusTypeClick(BonusType.RB))}
-              onClick={() => onBonusTypeClick(BonusType.RB)}
-              className={`${specialButtonClass} ${bonusButtonStyles[BonusType.RB]}`}
-              style={{ 
-                height: styles.specialButtonHeight, 
-                fontSize: styles.specialFontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              RB
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onBonusTypeClick(BonusType.CURRENT))}
-              onClick={() => onBonusTypeClick(BonusType.CURRENT)}
-              className={`${specialButtonClass} ${bonusButtonStyles[BonusType.CURRENT]}`}
-              style={{ 
-                height: styles.specialButtonHeight, 
-                fontSize: styles.specialFontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              現在
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, onSeparatorClick)}
-              onClick={onSeparatorClick}
-              className={separatorButtonClass}
-              style={{ 
-                height: styles.specialButtonHeight, 
-                fontSize: styles.specialFontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              区切り
-            </button>
-          </div>
+          {/* 行2: [RB][4][5][6][下追加] */}
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onBonusTypeClick(BonusType.RB))}
+            onClick={() => onBonusTypeClick(BonusType.RB)}
+            className={`${specialButtonClass} ${bonusButtonStyles[BonusType.RB]}`}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            RB
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('4'))}
+            onClick={() => onNumberClick('4')}
+            className={numberButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            4
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('5'))}
+            onClick={() => onNumberClick('5')}
+            className={numberButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            5
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('6'))}
+            onClick={() => onNumberClick('6')}
+            className={numberButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            6
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onAddRowClick('bottom'))}
+            onClick={() => onAddRowClick('bottom')}
+            className={addRowButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            <span>下追加</span>
+          </button>
 
-          {/* 数字キーと操作ボタン */}
-          <div className="grid grid-cols-4" style={{ gap: styles.buttonGap }}>
-            {/* 1-3 */}
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('1'))}
-              onClick={() => onNumberClick('1')}
-              className={numberButtonClass}
-              style={{ 
-                height: styles.buttonHeight, 
-                fontSize: styles.fontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              1
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('2'))}
-              onClick={() => onNumberClick('2')}
-              className={numberButtonClass}
-              style={{ 
-                height: styles.buttonHeight, 
-                fontSize: styles.fontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              2
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('3'))}
-              onClick={() => onNumberClick('3')}
-              className={numberButtonClass}
-              style={{ 
-                height: styles.buttonHeight, 
-                fontSize: styles.fontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              3
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onNavigateClick('up'))}
-              onClick={() => onNavigateClick('up')}
-              className={navigationButtonClass}
-              style={{ 
-                height: styles.buttonHeight, 
-                fontSize: styles.fontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              ↑
-            </button>
+          {/* 行3: [現在][7][8][9][上追加] */}
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onBonusTypeClick(BonusType.CURRENT))}
+            onClick={() => onBonusTypeClick(BonusType.CURRENT)}
+            className={`${specialButtonClass} ${bonusButtonStyles[BonusType.CURRENT]}`}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            現在
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('7'))}
+            onClick={() => onNumberClick('7')}
+            className={numberButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            7
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('8'))}
+            onClick={() => onNumberClick('8')}
+            className={numberButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            8
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('9'))}
+            onClick={() => onNumberClick('9')}
+            className={numberButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            9
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onAddRowClick('top'))}
+            onClick={() => onAddRowClick('top')}
+            className={addRowButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            <span>上追加</span>
+          </button>
 
-            {/* 4-6 */}
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('4'))}
-              onClick={() => onNumberClick('4')}
-              className={numberButtonClass}
-              style={{ 
-                height: styles.buttonHeight, 
-                fontSize: styles.fontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              4
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('5'))}
-              onClick={() => onNumberClick('5')}
-              className={numberButtonClass}
-              style={{ 
-                height: styles.buttonHeight, 
-                fontSize: styles.fontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              5
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('6'))}
-              onClick={() => onNumberClick('6')}
-              className={numberButtonClass}
-              style={{ 
-                height: styles.buttonHeight, 
-                fontSize: styles.fontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              6
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onNavigateClick('down'))}
-              onClick={() => onNavigateClick('down')}
-              className={navigationButtonClass}
-              style={{ 
-                height: styles.buttonHeight, 
-                fontSize: styles.fontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              ↓
-            </button>
-
-            {/* 7-9 */}
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('7'))}
-              onClick={() => onNumberClick('7')}
-              className={numberButtonClass}
-              style={{ 
-                height: styles.buttonHeight, 
-                fontSize: styles.fontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              7
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('8'))}
-              onClick={() => onNumberClick('8')}
-              className={numberButtonClass}
-              style={{ 
-                height: styles.buttonHeight, 
-                fontSize: styles.fontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              8
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('9'))}
-              onClick={() => onNumberClick('9')}
-              className={numberButtonClass}
-              style={{ 
-                height: styles.buttonHeight, 
-                fontSize: styles.fontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              9
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, onBackspaceClick)}
-              onClick={onBackspaceClick}
-              className={actionButtonClass}
-              style={{ 
-                height: styles.buttonHeight, 
-                padding: '0'
-              }}
-            >
-              <svg 
-                style={{ width: styles.iconSize, height: styles.iconSize }} 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" />
-              </svg>
-            </button>
-
-            {/* 0とエンター */}
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('0'))}
-              onClick={() => onNumberClick('0')}
-              className={`${numberButtonClass} col-span-2`}
-              style={{ 
-                height: styles.buttonHeight, 
-                fontSize: styles.fontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              0
-            </button>
-            <button
-              onTouchEnd={(e) => handleTouchEnd(e, onEnterClick)}
-              onClick={onEnterClick}
-              className={`${enterButtonClass} col-span-2`}
-              style={{ 
-                height: styles.buttonHeight, 
-                fontSize: styles.fontSize,
-                padding: styles.buttonPadding
-              }}
-            >
-              確定
-            </button>
-          </div>
+          {/* 行4: [区切り][↑][0][↓][確定] */}
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, onSeparatorClick)}
+            onClick={onSeparatorClick}
+            className={separatorButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            区切り
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNavigateClick('up'))}
+            onClick={() => onNavigateClick('up')}
+            className={navigationButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            ↑
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('0'))}
+            onClick={() => onNumberClick('0')}
+            className={numberButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            0
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, () => onNavigateClick('down'))}
+            onClick={() => onNavigateClick('down')}
+            className={navigationButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            ↓
+          </button>
+          <button
+            onTouchEnd={(e) => handleTouchEnd(e, onEnterClick)}
+            onClick={onEnterClick}
+            className={enterButtonClass}
+            style={{ 
+              height: styles.buttonHeight,
+              width: styles.buttonWidth,
+              fontSize: styles.fontSize
+            }}
+          >
+            確定
+          </button>
         </div>
       </div>
     </div>
