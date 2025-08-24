@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { BonusType } from '../types';
+import { useNumpadLayout } from '../hooks/useNumpadLayout';
+import { ButtonType, NumpadButton } from '../types/numpadTypes';
 
 interface CustomNumpadProps {
   onNumberClick: (num: string) => void;
@@ -32,6 +34,18 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
   const numpadRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef<HTMLDivElement>(null);
   const startPosRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
+
+  const {
+    layout,
+    isCustomizeMode,
+    draggedButton,
+    resetLayout,
+    startDrag,
+    endDrag,
+    cancelDrag,
+    toggleCustomizeMode
+  } = useNumpadLayout();
+
   const baseButtonClass = `
     font-bold rounded-lg transition-all duration-150 
     active:scale-95 select-none cursor-pointer
@@ -52,13 +66,13 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
   `;
 
   const bonusButtonStyles = {
-    [BonusType.BB]: gameMode === 'BLACK' 
+    bb: gameMode === 'BLACK' 
       ? 'bg-red-700 hover:bg-red-600 text-white' 
       : 'bg-red-500 hover:bg-red-600 text-white',
-    [BonusType.RB]: gameMode === 'BLACK'
+    rb: gameMode === 'BLACK'
       ? 'bg-blue-700 hover:bg-blue-600 text-white'
       : 'bg-blue-500 hover:bg-blue-600 text-white',
-    [BonusType.CURRENT]: gameMode === 'BLACK'
+    current: gameMode === 'BLACK'
       ? 'bg-orange-700 hover:bg-orange-600 text-white'
       : 'bg-orange-500 hover:bg-orange-600 text-white',
   };
@@ -102,16 +116,14 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
 
   const handleTouchEnd = (e: React.TouchEvent, callback: () => void) => {
     e.preventDefault();
-    callback();
+    if (!isCustomizeMode) {
+      callback();
+    }
   };
 
-  // デッドスペースゼロの完全フィット計算 4行×5列
   const getResponsiveStyles = () => {
-    // 4行×5列の完全グリッドでデッドスペースゼロ
     const buttonHeight = `${numpadSize.height / 4}px`;
     const buttonWidth = `${numpadSize.width / 5}px`;
-    
-    // フォントサイズは高さに比例
     const fontSize = `${Math.max(10, numpadSize.height / 24)}px`;
     const iconSize = `${Math.max(12, numpadSize.height / 20)}px`;
     
@@ -126,7 +138,6 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
   
   const styles = getResponsiveStyles();
 
-  // リサイズ機能
   useEffect(() => {
     localStorage.setItem('numpadSize', JSON.stringify(numpadSize));
   }, [numpadSize]);
@@ -181,23 +192,154 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
     };
   }, [isResizing]);
 
+  const handleButtonClick = (button: NumpadButton) => {
+    if (isCustomizeMode) return;
+
+    switch (button.type) {
+      case 'number':
+        if (button.value) onNumberClick(button.value);
+        break;
+      case 'bb':
+        onBonusTypeClick(BonusType.BB);
+        break;
+      case 'rb':
+        onBonusTypeClick(BonusType.RB);
+        break;
+      case 'current':
+        onBonusTypeClick(BonusType.CURRENT);
+        break;
+      case 'separator':
+        onSeparatorClick();
+        break;
+      case 'backspace':
+        onBackspaceClick();
+        break;
+      case 'up':
+        onNavigateClick('up');
+        break;
+      case 'down':
+        onNavigateClick('down');
+        break;
+      case 'addTop':
+        onAddRowClick('top');
+        break;
+      case 'addBottom':
+        onAddRowClick('bottom');
+        break;
+      case 'enter':
+        onEnterClick();
+        break;
+    }
+  };
+
+  const getButtonClass = (button: NumpadButton) => {
+    switch (button.type) {
+      case 'number':
+        return numberButtonClass;
+      case 'bb':
+        return `${specialButtonClass} ${bonusButtonStyles.bb}`;
+      case 'rb':
+        return `${specialButtonClass} ${bonusButtonStyles.rb}`;
+      case 'current':
+        return `${specialButtonClass} ${bonusButtonStyles.current}`;
+      case 'separator':
+        return separatorButtonClass;
+      case 'backspace':
+        return actionButtonClass;
+      case 'up':
+      case 'down':
+        return navigationButtonClass;
+      case 'addTop':
+      case 'addBottom':
+        return addRowButtonClass;
+      case 'enter':
+        return enterButtonClass;
+      default:
+        return baseButtonClass;
+    }
+  };
+
+  const renderButton = (button: NumpadButton) => {
+    if (button.type === 'backspace' && button.icon) {
+      return (
+        <svg 
+          style={{ width: styles.iconSize, height: styles.iconSize }} 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" />
+        </svg>
+      );
+    }
+    return button.label;
+  };
+
+  const handleDragStart = (e: React.DragEvent, button: NumpadButton, row: number, col: number) => {
+    if (!isCustomizeMode) return;
+    e.dataTransfer.effectAllowed = 'move';
+    startDrag(button, row, col);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!isCustomizeMode) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = (e: React.DragEvent, row: number, col: number) => {
+    if (!isCustomizeMode) return;
+    e.preventDefault();
+    endDrag(row, col);
+  };
+
+  const handleDragEnd = () => {
+    if (!isCustomizeMode) return;
+    cancelDrag();
+  };
+
   return (
     <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 z-50">
-        <div 
-          ref={numpadRef}
-          className={`
-            ${gameMode === 'BLACK' ? 'bg-gray-900' : 'bg-gray-50'} 
-            border ${gameMode === 'BLACK' ? 'border-gray-700' : 'border-gray-300'}
-            shadow-lg rounded-t-lg relative overflow-hidden
-            ${isResizing ? 'select-none' : ''}
-          `}
-          style={{
-            width: `${numpadSize.width}px`,
-            height: `${numpadSize.height}px`,
-            transition: isResizing ? 'none' : 'all 0.3s ease'
-          }}
-        >
-        {/* オーバーレイリサイズハンドル */}
+      <div 
+        ref={numpadRef}
+        className={`
+          ${gameMode === 'BLACK' ? 'bg-gray-900' : 'bg-gray-50'} 
+          border ${gameMode === 'BLACK' ? 'border-gray-700' : 'border-gray-300'}
+          shadow-lg rounded-t-lg relative overflow-hidden
+          ${isResizing ? 'select-none' : ''}
+          ${isCustomizeMode ? 'ring-2 ring-purple-500' : ''}
+        `}
+        style={{
+          width: `${numpadSize.width}px`,
+          height: `${numpadSize.height + (isCustomizeMode ? 40 : 0)}px`,
+          transition: isResizing ? 'none' : 'all 0.3s ease'
+        }}
+      >
+        {/* カスタマイズモードツールバー */}
+        {isCustomizeMode && (
+          <div className={`
+            flex items-center justify-between px-2 h-10
+            ${gameMode === 'BLACK' ? 'bg-purple-900' : 'bg-purple-100'}
+            border-b ${gameMode === 'BLACK' ? 'border-purple-700' : 'border-purple-300'}
+          `}>
+            <span className={`text-sm font-semibold ${gameMode === 'BLACK' ? 'text-purple-200' : 'text-purple-800'}`}>
+              カスタマイズモード
+            </span>
+            <button
+              onClick={resetLayout}
+              className={`
+                px-2 py-1 text-xs rounded
+                ${gameMode === 'BLACK' 
+                  ? 'bg-red-700 hover:bg-red-600 text-white' 
+                  : 'bg-red-500 hover:bg-red-600 text-white'}
+              `}
+            >
+              リセット
+            </button>
+          </div>
+        )}
+
+        {/* リサイズハンドル */}
         <div
           ref={resizeRef}
           className={`
@@ -216,265 +358,56 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
           </svg>
         </div>
 
+        {/* カスタマイズモード切り替えボタン */}
+        <button
+          onClick={toggleCustomizeMode}
+          className={`
+            absolute top-0 left-0 w-8 h-8 z-10
+            ${gameMode === 'BLACK' ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}
+            flex items-center justify-center
+            ${isCustomizeMode ? 'bg-purple-500 text-white' : 'bg-black bg-opacity-20 hover:bg-opacity-40'}
+            rounded-br-lg
+          `}
+          title={isCustomizeMode ? 'カスタマイズモード終了' : 'ボタン配置をカスタマイズ'}
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.67 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" />
+          </svg>
+        </button>
+
         <div 
           className="grid grid-cols-5 grid-rows-4 w-full h-full" 
           style={{ 
-            gap: styles.buttonGap
+            gap: styles.buttonGap,
+            paddingTop: isCustomizeMode ? '0' : '0'
           }}
         >
-          {/* 行1: [BB][1][2][3][BS] */}
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onBonusTypeClick(BonusType.BB))}
-            onClick={() => onBonusTypeClick(BonusType.BB)}
-            className={`${specialButtonClass} ${bonusButtonStyles[BonusType.BB]}`}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            BB
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('1'))}
-            onClick={() => onNumberClick('1')}
-            className={numberButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            1
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('2'))}
-            onClick={() => onNumberClick('2')}
-            className={numberButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            2
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('3'))}
-            onClick={() => onNumberClick('3')}
-            className={numberButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            3
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, onBackspaceClick)}
-            onClick={onBackspaceClick}
-            className={actionButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth
-            }}
-          >
-            <svg 
-              style={{ width: styles.iconSize, height: styles.iconSize }} 
-              fill="none" 
-              stroke="currentColor" 
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M3 12l6.414 6.414a2 2 0 001.414.586H19a2 2 0 002-2V7a2 2 0 00-2-2h-8.172a2 2 0 00-1.414.586L3 12z" />
-            </svg>
-          </button>
-
-          {/* 行2: [RB][4][5][6][↑] */}
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onBonusTypeClick(BonusType.RB))}
-            onClick={() => onBonusTypeClick(BonusType.RB)}
-            className={`${specialButtonClass} ${bonusButtonStyles[BonusType.RB]}`}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            RB
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('4'))}
-            onClick={() => onNumberClick('4')}
-            className={numberButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            4
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('5'))}
-            onClick={() => onNumberClick('5')}
-            className={numberButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            5
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('6'))}
-            onClick={() => onNumberClick('6')}
-            className={numberButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            6
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNavigateClick('up'))}
-            onClick={() => onNavigateClick('up')}
-            className={navigationButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            ↑
-          </button>
-
-          {/* 行3: [現在][7][8][9][↓] */}
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onBonusTypeClick(BonusType.CURRENT))}
-            onClick={() => onBonusTypeClick(BonusType.CURRENT)}
-            className={`${specialButtonClass} ${bonusButtonStyles[BonusType.CURRENT]}`}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            現在
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('7'))}
-            onClick={() => onNumberClick('7')}
-            className={numberButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            7
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('8'))}
-            onClick={() => onNumberClick('8')}
-            className={numberButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            8
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('9'))}
-            onClick={() => onNumberClick('9')}
-            className={numberButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            9
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNavigateClick('down'))}
-            onClick={() => onNavigateClick('down')}
-            className={navigationButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            ↓
-          </button>
-
-          {/* 行4: [区切り][上追加][下追加][0][確定] */}
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, onSeparatorClick)}
-            onClick={onSeparatorClick}
-            className={separatorButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            区切り
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onAddRowClick('top'))}
-            onClick={() => onAddRowClick('top')}
-            className={addRowButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            <span>上追加</span>
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onAddRowClick('bottom'))}
-            onClick={() => onAddRowClick('bottom')}
-            className={addRowButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            <span>下追加</span>
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, () => onNumberClick('0'))}
-            onClick={() => onNumberClick('0')}
-            className={numberButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            0
-          </button>
-          <button
-            onTouchEnd={(e) => handleTouchEnd(e, onEnterClick)}
-            onClick={onEnterClick}
-            className={enterButtonClass}
-            style={{ 
-              height: styles.buttonHeight,
-              width: styles.buttonWidth,
-              fontSize: styles.fontSize
-            }}
-          >
-            確定
-          </button>
+          {layout.rows.map((row, rowIndex) => 
+            row.map((button, colIndex) => (
+              <button
+                key={button.id}
+                draggable={isCustomizeMode}
+                onDragStart={(e) => handleDragStart(e, button, rowIndex, colIndex)}
+                onDragOver={handleDragOver}
+                onDrop={(e) => handleDrop(e, rowIndex, colIndex)}
+                onDragEnd={handleDragEnd}
+                onTouchEnd={(e) => handleTouchEnd(e, () => handleButtonClick(button))}
+                onClick={() => handleButtonClick(button)}
+                className={`
+                  ${getButtonClass(button)}
+                  ${isCustomizeMode ? 'cursor-move' : ''}
+                  ${draggedButton?.button.id === button.id ? 'opacity-50' : ''}
+                `}
+                style={{ 
+                  height: styles.buttonHeight,
+                  width: styles.buttonWidth,
+                  fontSize: styles.fontSize
+                }}
+              >
+                {renderButton(button)}
+              </button>
+            ))
+          )}
         </div>
       </div>
     </div>

@@ -302,6 +302,16 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                 onUpdate(focusedRecordId, { 
                     bonusType: record.bonusType === type ? BonusType.EMPTY : type 
                 });
+                
+                // BB/RB/現在ボタン決定後、自動的に次の行へ移動
+                const currentIndex = records.findIndex(r => r.id === focusedRecordId);
+                if (currentIndex !== -1 && currentIndex < records.length - 1) {
+                    const nextRecord = records[currentIndex + 1];
+                    setFocusedRecordId(nextRecord.id);
+                    setTimeout(() => {
+                        inputRefs.current[nextRecord.id]?.focus();
+                    }, 50);
+                }
             }
         }
     };
