@@ -253,12 +253,12 @@ export default function App(): React.ReactNode {
                              <PlusIcon className="w-4 h-4" />
                            </div>
                         </button>
-                        <button onClick={swapRecords} className={`flex-1 ${gameMode === 'BLACK' ? 'bg-blue-700 hover:bg-blue-600 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} font-semibold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-2`}>
-                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" /></svg>
-                           <span>上下入替</span>
+                        <button onClick={swapRecords} className={`flex-1 ${gameMode === 'BLACK' ? 'bg-blue-700 hover:bg-blue-600 text-white' : 'bg-blue-500 hover:bg-blue-600 text-white'} font-semibold py-2 px-2 sm:px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-1 sm:space-x-2`}>
+                           <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" /></svg>
+                           <span className="text-xs sm:text-sm">上下入替</span>
                         </button>
-                         <button onClick={clearAllRecords} className={`flex-1 ${gameMode === 'BLACK' ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'} font-semibold py-2 px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-2`}>
-                           <XCircleIcon className="w-5 h-5" /> <span>クリア</span>
+                         <button onClick={clearAllRecords} className={`flex-1 ${gameMode === 'BLACK' ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'} font-semibold py-2 px-2 sm:px-4 rounded-lg transition duration-200 flex items-center justify-center space-x-1 sm:space-x-2`}>
+                           <XCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" /> <span className="text-xs sm:text-sm">クリア</span>
                         </button>
                     </div>
 
