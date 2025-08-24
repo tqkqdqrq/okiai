@@ -299,11 +299,13 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
         if (focusedRecordId !== null) {
             const record = records.find(r => r.id === focusedRecordId);
             if (record) {
+                // 現在のレコードのボーナスタイプを更新
+                const newBonusType = record.bonusType === type ? BonusType.EMPTY : type;
                 onUpdate(focusedRecordId, { 
-                    bonusType: record.bonusType === type ? BonusType.EMPTY : type 
+                    bonusType: newBonusType 
                 });
                 
-                // BB/RB/現在ボタン決定後、自動的に次の行へ移動
+                // 自動的に次の行へ移動
                 const currentIndex = records.findIndex(r => r.id === focusedRecordId);
                 if (currentIndex !== -1) {
                     if (currentIndex < records.length - 1) {
@@ -313,8 +315,19 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                         setTimeout(() => {
                             inputRefs.current[nextRecord.id]?.focus();
                         }, 50);
-                    } else if (onReorder) {
-                        // 最終行の場合、新しい行を自動追加
+                    } else if (onReorder && type !== BonusType.CURRENT) {
+                        // 最終行でBB/RBボタンの場合のみ、新しい行を自動追加（現在ボタンは除外）
+                        const updatedRecord = {
+                            ...record,
+                            bonusType: newBonusType
+                        };
+                        
+                        // 更新を反映したレコード配列を作成
+                        const updatedRecords = records.map(r => 
+                            r.id === focusedRecordId ? updatedRecord : r
+                        );
+                        
+                        // 新しい行を追加
                         const newRecord: GameRecord = {
                             id: Date.now() + Math.random(),
                             gameCount: '',
@@ -322,7 +335,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                             isSeparator: false
                         };
                         
-                        const newRecords = [...records, newRecord];
+                        const newRecords = [...updatedRecords, newRecord];
                         onReorder(newRecords);
                         
                         // 新しい行にフォーカス
