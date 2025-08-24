@@ -51,10 +51,23 @@ export default function TextOutput({ records, gameMode = 'GOLD', onReorder }: Te
   const handleDrop = useCallback((e: React.DragEvent<HTMLTableRowElement>, dropIndex: number) => {
     e.preventDefault();
     if (draggedIndex !== null && draggedIndex !== dropIndex && onReorder) {
-      const newRecords = [...records];
-      const [draggedRecord] = newRecords.splice(draggedIndex, 1);
-      newRecords.splice(dropIndex, 0, draggedRecord);
-      onReorder(newRecords);
+      const draggedRecord = records[draggedIndex];
+      const targetRecord = records[dropIndex];
+      
+      // 区切りレコード同士の移動のみ許可
+      if (draggedRecord.isSeparator && targetRecord.isSeparator) {
+        // 区切りレコードのisSeparatorフラグを入れ替える
+        const newRecords = [...records];
+        newRecords[draggedIndex] = { ...draggedRecord, isSeparator: false };
+        newRecords[dropIndex] = { ...targetRecord, isSeparator: true };
+        onReorder(newRecords);
+      } else if (draggedRecord.isSeparator) {
+        // 区切りを通常レコードの位置に移動する場合
+        const newRecords = [...records];
+        newRecords[draggedIndex] = { ...draggedRecord, isSeparator: false };
+        newRecords[dropIndex] = { ...targetRecord, isSeparator: true };
+        onReorder(newRecords);
+      }
     }
     setDraggedIndex(null);
     setDragOverIndex(null);
@@ -189,11 +202,17 @@ export default function TextOutput({ records, gameMode = 'GOLD', onReorder }: Te
     
     // ドラッグ完了の場合
     if (isLongPress && isDragging && dragOverIndex !== null && dragOverIndex !== touchData.index && onReorder) {
-      const newRecords = [...records];
-      const [draggedRecord] = newRecords.splice(touchData.index, 1);
-      newRecords.splice(dragOverIndex, 0, draggedRecord);
-      onReorder(newRecords);
-      triggerHapticFeedback();
+      const draggedRecord = records[touchData.index];
+      const targetRecord = records[dragOverIndex];
+      
+      // 区切りレコードの移動処理
+      if (draggedRecord.isSeparator) {
+        const newRecords = [...records];
+        newRecords[touchData.index] = { ...draggedRecord, isSeparator: false };
+        newRecords[dragOverIndex] = { ...targetRecord, isSeparator: true };
+        onReorder(newRecords);
+        triggerHapticFeedback();
+      }
     } else if (isLongPress) {
       // 長押ししたが有効なドロップ位置がない場合
       touchData.element.style.transition = 'all 0.3s ease-out';

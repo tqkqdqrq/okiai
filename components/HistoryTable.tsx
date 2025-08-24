@@ -58,17 +58,35 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
     const handleDrop = (e: React.DragEvent<HTMLTableRowElement>, dropIndex: number) => {
         e.preventDefault();
         if (draggedSeparatorIndex !== null && draggedSeparatorIndex !== dropIndex && onReorder) {
-            // レコードの順序を入れ替える
-            const newRecords = [...records];
-            const [draggedRecord] = newRecords.splice(draggedSeparatorIndex, 1);
-            newRecords.splice(dropIndex, 0, draggedRecord);
+            const draggedRecord = records[draggedSeparatorIndex];
+            const targetRecord = records[dropIndex];
             
-            // 成功アニメーション
-            setDropSuccess(dropIndex);
-            setTimeout(() => setDropSuccess(null), 1000);
-            
-            // 親コンポーネントに新しい順序を通知
-            onReorder(newRecords);
+            // 区切りレコード同士の移動のみ許可
+            if (draggedRecord.isSeparator && targetRecord.isSeparator) {
+                // 区切りレコードのisSeparatorフラグを入れ替える
+                const newRecords = [...records];
+                newRecords[draggedSeparatorIndex] = { ...draggedRecord, isSeparator: false };
+                newRecords[dropIndex] = { ...targetRecord, isSeparator: true };
+                
+                // 成功アニメーション
+                setDropSuccess(dropIndex);
+                setTimeout(() => setDropSuccess(null), 1000);
+                
+                // 親コンポーネントに新しい順序を通知
+                onReorder(newRecords);
+            } else if (draggedRecord.isSeparator) {
+                // 区切りを通常レコードの位置に移動する場合
+                const newRecords = [...records];
+                newRecords[draggedSeparatorIndex] = { ...draggedRecord, isSeparator: false };
+                newRecords[dropIndex] = { ...targetRecord, isSeparator: true };
+                
+                // 成功アニメーション
+                setDropSuccess(dropIndex);
+                setTimeout(() => setDropSuccess(null), 1000);
+                
+                // 親コンポーネントに新しい順序を通知
+                onReorder(newRecords);
+            }
         }
         setDraggedSeparatorIndex(null);
         setDragOverIndex(null);
@@ -205,16 +223,21 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
         
         // ドラッグ完了の場合
         if (isLongPress && isDragging && dragOverIndex !== null && dragOverIndex !== touchData.index && onReorder) {
-            // ドロップ処理
-            const newRecords = [...records];
-            const [draggedRecord] = newRecords.splice(touchData.index, 1);
-            newRecords.splice(dragOverIndex, 0, draggedRecord);
+            const draggedRecord = records[touchData.index];
+            const targetRecord = records[dragOverIndex];
             
-            setDropSuccess(dragOverIndex);
-            setTimeout(() => setDropSuccess(null), 1000);
-            onReorder(newRecords);
-            
-            triggerHapticFeedback(); // 成功時のフィードバック
+            // 区切りレコードの移動処理
+            if (draggedRecord.isSeparator) {
+                const newRecords = [...records];
+                newRecords[touchData.index] = { ...draggedRecord, isSeparator: false };
+                newRecords[dragOverIndex] = { ...targetRecord, isSeparator: true };
+                
+                setDropSuccess(dragOverIndex);
+                setTimeout(() => setDropSuccess(null), 1000);
+                onReorder(newRecords);
+                
+                triggerHapticFeedback(); // 成功時のフィードバック
+            }
         } else if (isLongPress) {
             // 長押ししたが有効なドロップ位置がない場合のアニメーション
             touchData.element.style.transition = 'all 0.3s ease-out';
