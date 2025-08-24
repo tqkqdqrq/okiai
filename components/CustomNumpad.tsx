@@ -10,7 +10,6 @@ interface CustomNumpadProps {
   onBackspaceClick: () => void;
   onAddRowClick: (position: 'top' | 'bottom') => void;
   onClose: () => void;
-  onClearAll: () => void;
   gameMode: 'GOLD' | 'BLACK';
 }
 
@@ -23,12 +22,11 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
   onBackspaceClick,
   onAddRowClick,
   onClose,
-  onClearAll,
   gameMode
 }) => {
   const [numpadSize, setNumpadSize] = useState(() => {
     const saved = localStorage.getItem('numpadSize');
-    return saved ? JSON.parse(saved) : { width: 320, height: 400 };
+    return saved ? JSON.parse(saved) : { width: 300, height: 380 };
   });
   const [isResizing, setIsResizing] = useState(false);
   const numpadRef = useRef<HTMLDivElement>(null);
@@ -138,8 +136,8 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
       const deltaX = clientX - startPosRef.current.x;
       const deltaY = clientY - startPosRef.current.y;
       
-      const newWidth = Math.max(280, Math.min(500, startPosRef.current.width + deltaX));
-      const newHeight = Math.max(350, Math.min(600, startPosRef.current.height + deltaY));
+      const newWidth = Math.max(200, Math.min(500, startPosRef.current.width + deltaX));
+      const newHeight = Math.max(250, Math.min(600, startPosRef.current.height + deltaY));
       
       setNumpadSize({ width: newWidth, height: newHeight });
     };
@@ -179,38 +177,11 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
             transition: isResizing ? 'none' : 'all 0.3s ease'
           }}
         >
-        {/* 全クリアボタン */}
-        <button
-          onClick={onClearAll}
-          className={`
-            absolute top-2 right-12 p-2 rounded-full
-            ${gameMode === 'BLACK' ? 'bg-red-700 hover:bg-red-600 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}
-          `}
-          title="全クリア"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-        </button>
-        
-        {/* クローズボタン */}
-        <button
-          onClick={onClose}
-          className={`
-            absolute top-2 right-2 p-2 rounded-full
-            ${gameMode === 'BLACK' ? 'bg-gray-700 hover:bg-gray-600 text-gray-300' : 'bg-gray-200 hover:bg-gray-300 text-gray-600'}
-          `}
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-        
         {/* リサイズハンドル */}
         <div
           ref={resizeRef}
           className={`
-            absolute bottom-1 right-1 w-6 h-6 cursor-se-resize
+            absolute top-2 right-2 w-6 h-6 cursor-se-resize
             ${gameMode === 'BLACK' ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}
             flex items-center justify-center rounded-full
             ${isResizing ? 'bg-blue-500 text-white' : 'hover:bg-gray-200'}
@@ -224,7 +195,7 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
           </svg>
         </div>
 
-        <div className="grid gap-1 sm:gap-2 h-full overflow-auto" style={{ paddingTop: '40px', paddingBottom: '30px' }}>
+        <div className="grid gap-1 sm:gap-2 h-full overflow-auto" style={{ paddingTop: '35px', paddingBottom: '10px' }}>
           {/* 行追加ボタン */}
           <div className="grid grid-cols-2 gap-1 sm:gap-2 mb-1 sm:mb-2">
             <button
