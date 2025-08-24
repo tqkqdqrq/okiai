@@ -312,6 +312,17 @@ const ImageProcessor: React.FC<ImageProcessorProps> = ({
               <p className="text-sm text-gray-600">
                 マウスドラッグで切り取り範囲を選択してください。角をドラッグしてサイズ調整、中央をドラッグして移動できます。
               </p>
+              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800 font-semibold flex items-center">
+                  <span className="text-lg mr-2">💡</span>
+                  ヒント: AI認識精度を上げるコツ
+                </p>
+                <ul className="mt-1 text-xs text-blue-700 space-y-1">
+                  <li>• ヘッダー部分（G数、種別、時間）を含めると認識精度が大幅に向上します</li>
+                  <li>• 枚数カウントがある場合は、その部分を除外するかヘッダーも含めて切り取ってください</li>
+                  <li>• 文字がはっきり読める部分を選択してください</li>
+                </ul>
+              </div>
             </div>
             <div className="flex-1 mb-4 overflow-hidden" style={{minHeight: '400px', maxHeight: '60vh'}}>
               <img 

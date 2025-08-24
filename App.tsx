@@ -8,7 +8,8 @@ import ImageProcessor from './components/ImageProcessor';
 import HistoryTable from './components/HistoryTable';
 import TextOutput from './components/TextOutput';
 import AILoadingAnimation from './components/AILoadingAnimation';
-import { PlusIcon, TrashIcon, XCircleIcon } from './components/icons';
+import UsageGuide from './components/UsageGuide';
+import { PlusIcon, TrashIcon, XCircleIcon, QuestionMarkCircleIcon } from './components/icons';
 import { useImageProcessingLimit } from './hooks/useImageProcessingLimit';
 
 type GameMode = 'GOLD' | 'BLACK';
@@ -32,6 +33,7 @@ export default function App(): React.ReactNode {
     const [isDeleteMode, setIsDeleteMode] = useState<boolean>(false);
     const [gameMode, setGameMode] = useState<GameMode>('GOLD');
     const [showNumpad, setShowNumpad] = useState<boolean>(false);
+    const [showUsageGuide, setShowUsageGuide] = useState<boolean>(false);
     
     const { 
         isLimitReached, 
@@ -151,7 +153,7 @@ export default function App(): React.ReactNode {
         <div className={`container max-w-2xl mx-auto p-4 font-sans ${gameMode === 'BLACK' ? 'bg-gray-900 text-white' : 'text-gray-800'}`}>
             <header className="text-center mb-6">
                 {/* ナビゲーションリンク */}
-                <div className="mb-4 flex justify-center space-x-4">
+                <div className="mb-4 flex justify-center items-center space-x-4">
                     <a 
                         href="https://suroschool.jp/" 
                         target="_blank" 
@@ -173,6 +175,16 @@ export default function App(): React.ReactNode {
                     >
                         スロ塾ツール一覧
                     </a>
+                    <span className={`text-sm ${gameMode === 'BLACK' ? 'text-gray-500' : 'text-gray-400'}`}>|</span>
+                    <button
+                        onClick={() => setShowUsageGuide(true)}
+                        className={`text-sm font-medium transition-colors duration-200 hover:underline flex items-center space-x-1 ${
+                            gameMode === 'BLACK' ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
+                        }`}
+                    >
+                        <QuestionMarkCircleIcon className="w-4 h-4" />
+                        <span>使い方</span>
+                    </button>
                 </div>
                 
                 <h1 className={`text-3xl font-bold ${gameMode === 'BLACK' ? 'text-red-400' : 'text-gold'}`}>
@@ -302,6 +314,13 @@ export default function App(): React.ReactNode {
             
             {/* AIローディングアニメーション */}
             {isLoading && <AILoadingAnimation gameMode={gameMode} />}
+            
+            {/* 使い方ガイドモーダル */}
+            <UsageGuide 
+                isOpen={showUsageGuide} 
+                onClose={() => setShowUsageGuide(false)} 
+                gameMode={gameMode} 
+            />
         </div>
     );
 }
