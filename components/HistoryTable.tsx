@@ -305,12 +305,34 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                 
                 // BB/RB/現在ボタン決定後、自動的に次の行へ移動
                 const currentIndex = records.findIndex(r => r.id === focusedRecordId);
-                if (currentIndex !== -1 && currentIndex < records.length - 1) {
-                    const nextRecord = records[currentIndex + 1];
-                    setFocusedRecordId(nextRecord.id);
-                    setTimeout(() => {
-                        inputRefs.current[nextRecord.id]?.focus();
-                    }, 50);
+                if (currentIndex !== -1) {
+                    if (currentIndex < records.length - 1) {
+                        // 次の行が存在する場合
+                        const nextRecord = records[currentIndex + 1];
+                        setFocusedRecordId(nextRecord.id);
+                        setTimeout(() => {
+                            inputRefs.current[nextRecord.id]?.focus();
+                        }, 50);
+                    } else if (onReorder) {
+                        // 最終行の場合、新しい行を自動追加
+                        const newRecord: GameRecord = {
+                            id: Date.now() + Math.random(),
+                            gameCount: '',
+                            bonusType: BonusType.EMPTY,
+                            isSeparator: false
+                        };
+                        
+                        const newRecords = [...records, newRecord];
+                        onReorder(newRecords);
+                        
+                        // 新しい行にフォーカス
+                        setTimeout(() => {
+                            setFocusedRecordId(newRecord.id);
+                            setTimeout(() => {
+                                inputRefs.current[newRecord.id]?.focus();
+                            }, 100);
+                        }, 50);
+                    }
                 }
             }
         }

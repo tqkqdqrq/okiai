@@ -34,16 +34,28 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
   const numpadRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef<HTMLDivElement>(null);
   const startPosRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
+  
+  // タッチドラッグ用のref
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const touchStartPosRef = useRef<{ x: number; y: number; row: number; col: number } | null>(null);
+  const buttonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   const {
     layout,
     isCustomizeMode,
     draggedButton,
+    isDragging,
+    dragPosition,
+    hoveredPosition,
     resetLayout,
     startDrag,
     endDrag,
     cancelDrag,
-    toggleCustomizeMode
+    toggleCustomizeMode,
+    startTouchDrag,
+    updateDragPosition,
+    updateHoveredPosition,
+    endTouchDrag
   } = useNumpadLayout();
 
   const baseButtonClass = `
@@ -114,12 +126,6 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
     font-semibold
   `;
 
-  const handleTouchEnd = (e: React.TouchEvent, callback: () => void) => {
-    e.preventDefault();
-    if (!isCustomizeMode) {
-      callback();
-    }
-  };
 
   const getResponsiveStyles = () => {
     const buttonHeight = `${numpadSize.height / 4}px`;
@@ -298,6 +304,70 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
     cancelDrag();
   };
 
+  // タッチイベントハンドラー
+  const handleTouchStart = (e: React.TouchEvent, button: NumpadButton, row: number, col: number) => {
+    if (!isCustomizeMode) return;
+    
+    const touch = e.touches[0];
+    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY, row, col };
+    
+    // 長押しタイマー開始（500ms）
+    longPressTimerRef.current = setTimeout(() => {
+      // バイブレーションフィードバック
+      if ('vibrate' in navigator) {
+        navigator.vibrate(50);
+      }
+      startTouchDrag(button, row, col);
+      updateDragPosition(touch.clientX, touch.clientY);
+    }, 500);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isCustomizeMode) return;
+    
+    const touch = e.touches[0];
+    
+    // 長押し判定前に移動した場合はキャンセル
+    if (longPressTimerRef.current && touchStartPosRef.current) {
+      const dx = Math.abs(touch.clientX - touchStartPosRef.current.x);
+      const dy = Math.abs(touch.clientY - touchStartPosRef.current.y);
+      if (dx > 10 || dy > 10) {
+        clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
+      }
+    }
+    
+    // ドラッグ中の処理
+    if (isDragging) {
+      e.preventDefault();
+      updateDragPosition(touch.clientX, touch.clientY);
+      
+      // タッチ位置からホバー対象を判定
+      const element = document.elementFromPoint(touch.clientX, touch.clientY);
+      if (element && element.hasAttribute('data-grid-pos')) {
+        const pos = element.getAttribute('data-grid-pos')?.split('-');
+        if (pos && pos.length === 2) {
+          updateHoveredPosition(parseInt(pos[0]), parseInt(pos[1]));
+        }
+      } else {
+        updateHoveredPosition(null, null);
+      }
+    }
+  };
+
+  const handleTouchEndOrCancel = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    
+    if (isDragging) {
+      endTouchDrag();
+    }
+    
+    touchStartPosRef.current = null;
+  };
+
   return (
     <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 z-50">
       <div 
@@ -386,22 +456,41 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
             row.map((button, colIndex) => (
               <button
                 key={button.id}
-                draggable={isCustomizeMode}
+                ref={(el) => { buttonRefs.current[`${rowIndex}-${colIndex}`] = el; }}
+                data-grid-pos={`${rowIndex}-${colIndex}`}
+                draggable={isCustomizeMode && !isDragging}
                 onDragStart={(e) => handleDragStart(e, button, rowIndex, colIndex)}
                 onDragOver={handleDragOver}
                 onDrop={(e) => handleDrop(e, rowIndex, colIndex)}
                 onDragEnd={handleDragEnd}
-                onTouchEnd={(e) => handleTouchEnd(e, () => handleButtonClick(button))}
-                onClick={() => handleButtonClick(button)}
+                onTouchStart={(e) => handleTouchStart(e, button, rowIndex, colIndex)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEndOrCancel}
+                onTouchCancel={handleTouchEndOrCancel}
+                onTouchEndCapture={(e) => {
+                  if (!isCustomizeMode && !isDragging) {
+                    e.preventDefault();
+                    handleButtonClick(button);
+                  }
+                }}
+                onClick={() => {
+                  if (!isCustomizeMode) {
+                    handleButtonClick(button);
+                  }
+                }}
                 className={`
                   ${getButtonClass(button)}
                   ${isCustomizeMode ? 'cursor-move' : ''}
-                  ${draggedButton?.button.id === button.id ? 'opacity-50' : ''}
+                  ${draggedButton?.button.id === button.id ? (isDragging ? 'opacity-30 scale-110' : 'opacity-50') : ''}
+                  ${hoveredPosition?.row === rowIndex && hoveredPosition?.col === colIndex ? 'ring-2 ring-blue-400 scale-105' : ''}
+                  ${isDragging && draggedButton?.button.id === button.id ? 'z-50' : ''}
                 `}
                 style={{ 
                   height: styles.buttonHeight,
                   width: styles.buttonWidth,
-                  fontSize: styles.fontSize
+                  fontSize: styles.fontSize,
+                  touchAction: isCustomizeMode ? 'none' : 'auto',
+                  transition: isDragging ? 'transform 0.2s, opacity 0.2s' : 'all 0.15s'
                 }}
               >
                 {renderButton(button)}

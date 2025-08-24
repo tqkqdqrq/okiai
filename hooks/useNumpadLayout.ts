@@ -23,6 +23,11 @@ export const useNumpadLayout = () => {
     fromRow: number;
     fromCol: number;
   } | null>(null);
+  
+  // タッチドラッグ用の状態
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragPosition, setDragPosition] = useState<{ x: number; y: number } | null>(null);
+  const [hoveredPosition, setHoveredPosition] = useState<{ row: number; col: number } | null>(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(layout));
@@ -78,17 +83,63 @@ export const useNumpadLayout = () => {
     if (draggedButton) {
       setDraggedButton(null);
     }
+    setIsDragging(false);
+    setDragPosition(null);
+    setHoveredPosition(null);
+  };
+
+  // タッチドラッグ開始
+  const startTouchDrag = (button: NumpadButton, row: number, col: number) => {
+    setDraggedButton({ button, fromRow: row, fromCol: col });
+    setIsDragging(true);
+  };
+
+  // ドラッグ位置更新
+  const updateDragPosition = (x: number, y: number) => {
+    setDragPosition({ x, y });
+  };
+
+  // ホバー位置更新
+  const updateHoveredPosition = (row: number | null, col: number | null) => {
+    if (row !== null && col !== null) {
+      setHoveredPosition({ row, col });
+    } else {
+      setHoveredPosition(null);
+    }
+  };
+
+  // タッチドラッグ終了
+  const endTouchDrag = () => {
+    if (draggedButton && hoveredPosition) {
+      swapButtons(
+        draggedButton.fromRow,
+        draggedButton.fromCol,
+        hoveredPosition.row,
+        hoveredPosition.col
+      );
+    }
+    setDraggedButton(null);
+    setIsDragging(false);
+    setDragPosition(null);
+    setHoveredPosition(null);
   };
 
   return {
     layout,
     isCustomizeMode,
     draggedButton,
+    isDragging,
+    dragPosition,
+    hoveredPosition,
     swapButtons,
     resetLayout,
     startDrag,
     endDrag,
     cancelDrag,
-    toggleCustomizeMode
+    toggleCustomizeMode,
+    startTouchDrag,
+    updateDragPosition,
+    updateHoveredPosition,
+    endTouchDrag
   };
 };
