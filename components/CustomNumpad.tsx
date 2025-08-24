@@ -126,20 +126,28 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
               onClick={() => onAddRowClick('top')}
               className={addRowButtonClass}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span>上に行追加</span>
+              <div className="flex items-center gap-0.5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 14l5-5 5 5" />
+                </svg>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m6-3l-6 6-6-6" />
+                </svg>
+              </div>
             </button>
             <button
               onTouchEnd={(e) => handleTouchEnd(e, () => onAddRowClick('bottom'))}
               onClick={() => onAddRowClick('bottom')}
               className={addRowButtonClass}
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span>下に行追加</span>
+              <div className="flex items-center gap-0.5">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 10l5 5 5-5" />
+                </svg>
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m6-3l-6 6-6-6" />
+                </svg>
+              </div>
             </button>
           </div>
 
