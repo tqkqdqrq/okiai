@@ -18,54 +18,39 @@
     <style>
       /* Cropper.jsのハンドルを大きくする（スマホ対応） */
       .cropper-point {
-        width: 20px !important;
-        height: 20px !important;
-        opacity: 1 !important;
+        width: 12px !important;
+        height: 12px !important;
+        opacity: 0.75 !important;
       }
       
-      /* コーナーハンドルを大きくする */
-      .cropper-point.point-e,
-      .cropper-point.point-n,
-      .cropper-point.point-w,
-      .cropper-point.point-s,
+      /* コーナーハンドルを少し大きくする */
       .cropper-point.point-ne,
       .cropper-point.point-nw,
       .cropper-point.point-sw,
       .cropper-point.point-se {
-        width: 24px !important;
-        height: 24px !important;
+        width: 14px !important;
+        height: 14px !important;
+        opacity: 1 !important;
       }
       
       /* タッチターゲットを大きくする */
       @media (max-width: 640px) {
         .cropper-point {
-          width: 28px !important;
-          height: 28px !important;
+          width: 16px !important;
+          height: 16px !important;
         }
         
-        .cropper-point.point-e,
-        .cropper-point.point-n,
-        .cropper-point.point-w,
-        .cropper-point.point-s,
         .cropper-point.point-ne,
         .cropper-point.point-nw,
         .cropper-point.point-sw,
         .cropper-point.point-se {
-          width: 32px !important;
-          height: 32px !important;
+          width: 20px !important;
+          height: 20px !important;
         }
         
-        /* 線も太くする */
+        /* 線を少し太くする */
         .cropper-line {
           background-color: rgba(56, 189, 248, 0.3) !important;
-        }
-        
-        .cropper-line.line-e,
-        .cropper-line.line-n,
-        .cropper-line.line-w,
-        .cropper-line.line-s {
-          width: 8px !important;
-          height: 8px !important;
         }
       }
     </style>

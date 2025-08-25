@@ -30,10 +30,16 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
     const saved = localStorage.getItem('numpadSize');
     return saved ? JSON.parse(saved) : { width: 300, height: 380 };
   });
+  const [numpadPosition, setNumpadPosition] = useState(() => {
+    const saved = localStorage.getItem('numpadPosition');
+    return saved ? JSON.parse(saved) : { x: 50 }; // 50% = center
+  });
   const [isResizing, setIsResizing] = useState(false);
+  const [isDraggingPosition, setIsDraggingPosition] = useState(false);
   const numpadRef = useRef<HTMLDivElement>(null);
   const resizeRef = useRef<HTMLDivElement>(null);
   const startPosRef = useRef({ x: 0, y: 0, width: 0, height: 0 });
+  const startDragPosRef = useRef({ x: 0, startX: 0 });
   
   // タッチドラッグ用のref
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -147,6 +153,10 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
   useEffect(() => {
     localStorage.setItem('numpadSize', JSON.stringify(numpadSize));
   }, [numpadSize]);
+
+  useEffect(() => {
+    localStorage.setItem('numpadPosition', JSON.stringify(numpadPosition));
+  }, [numpadPosition]);
 
   const startResize = (e: React.MouseEvent | React.TouchEvent) => {
     e.preventDefault();
@@ -368,8 +378,67 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
     touchStartPosRef.current = null;
   };
 
+  // 位置ドラッグハンドラー
+  const startPositionDrag = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!isCustomizeMode) return;
+    e.preventDefault();
+    setIsDraggingPosition(true);
+    
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    startDragPosRef.current = {
+      x: clientX,
+      startX: numpadPosition.x
+    };
+  };
+
+  useEffect(() => {
+    const handlePositionDrag = (e: MouseEvent | TouchEvent) => {
+      if (!isDraggingPosition) return;
+      
+      const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+      const deltaX = clientX - startDragPosRef.current.x;
+      const windowWidth = window.innerWidth;
+      const numpadWidth = numpadSize.width;
+      
+      // Calculate percentage position (0-100)
+      const deltaPercent = (deltaX / windowWidth) * 100;
+      let newX = startDragPosRef.current.startX + deltaPercent;
+      
+      // Limit to keep numpad on screen
+      const minX = (numpadWidth / 2 / windowWidth) * 100;
+      const maxX = 100 - minX;
+      newX = Math.max(minX, Math.min(maxX, newX));
+      
+      setNumpadPosition({ x: newX });
+    };
+
+    const stopPositionDrag = () => {
+      setIsDraggingPosition(false);
+    };
+
+    if (isDraggingPosition) {
+      document.addEventListener('mousemove', handlePositionDrag);
+      document.addEventListener('mouseup', stopPositionDrag);
+      document.addEventListener('touchmove', handlePositionDrag);
+      document.addEventListener('touchend', stopPositionDrag);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handlePositionDrag);
+      document.removeEventListener('mouseup', stopPositionDrag);
+      document.removeEventListener('touchmove', handlePositionDrag);
+      document.removeEventListener('touchend', stopPositionDrag);
+    };
+  }, [isDraggingPosition, numpadPosition.x, numpadSize.width]);
+
   return (
-    <div className="fixed bottom-0 left-1/2 transform -translate-x-1/2 z-50">
+    <div 
+      className="fixed bottom-0 z-50"
+      style={{
+        left: `${numpadPosition.x}%`,
+        transform: 'translateX(-50%)'
+      }}
+    >
       <div 
         ref={numpadRef}
         className={`
@@ -387,16 +456,29 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
       >
         {/* カスタマイズモードツールバー */}
         {isCustomizeMode && (
-          <div className={`
-            flex items-center justify-between px-2 h-10
-            ${gameMode === 'BLACK' ? 'bg-purple-900' : 'bg-purple-100'}
-            border-b ${gameMode === 'BLACK' ? 'border-purple-700' : 'border-purple-300'}
-          `}>
-            <span className={`text-sm font-semibold ${gameMode === 'BLACK' ? 'text-purple-200' : 'text-purple-800'}`}>
-              カスタマイズモード
+          <div 
+            className={`
+              flex items-center justify-between px-2 h-10 cursor-move
+              ${gameMode === 'BLACK' ? 'bg-purple-900' : 'bg-purple-100'}
+              border-b ${gameMode === 'BLACK' ? 'border-purple-700' : 'border-purple-300'}
+              ${isDraggingPosition ? 'opacity-75' : ''}
+            `}
+            onMouseDown={startPositionDrag}
+            onTouchStart={startPositionDrag}
+            title="ドラッグして位置を調整"
+          >
+            <span className={`text-sm font-semibold ${gameMode === 'BLACK' ? 'text-purple-200' : 'text-purple-800'} select-none`}>
+              ⬌ カスタマイズモード
             </span>
             <button
-              onClick={resetLayout}
+              onClick={(e) => {
+                e.stopPropagation();
+                resetLayout();
+                setNumpadPosition({ x: 50 });
+                localStorage.removeItem('numpadPosition');
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
               className={`
                 px-2 py-1 text-xs rounded
                 ${gameMode === 'BLACK' 
@@ -409,24 +491,26 @@ const CustomNumpad: React.FC<CustomNumpadProps> = ({
           </div>
         )}
 
-        {/* リサイズハンドル */}
-        <div
-          ref={resizeRef}
-          className={`
-            absolute top-0 right-0 w-8 h-8 cursor-se-resize z-10
-            ${gameMode === 'BLACK' ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}
-            flex items-center justify-center
-            ${isResizing ? 'bg-blue-500 text-white opacity-80' : 'bg-black bg-opacity-20 hover:bg-opacity-40'}
-            rounded-bl-lg
-          `}
-          onMouseDown={startResize}
-          onTouchStart={startResize}
-          title="ドラッグでサイズ調整"
-        >
-          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M22,22H20V20H22V22M22,18H20V16H22V18M18,22H16V20H18V22M18,18H16V16H18V18M14,22H12V20H14V22M22,14H20V12H22V14Z" />
-          </svg>
-        </div>
+        {/* リサイズハンドル - カスタマイズモード時のみ表示 */}
+        {isCustomizeMode && (
+          <div
+            ref={resizeRef}
+            className={`
+              absolute top-0 right-0 w-8 h-8 cursor-se-resize z-10
+              ${gameMode === 'BLACK' ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}
+              flex items-center justify-center
+              ${isResizing ? 'bg-blue-500 text-white opacity-80' : 'bg-black bg-opacity-20 hover:bg-opacity-40'}
+              rounded-bl-lg
+            `}
+            onMouseDown={startResize}
+            onTouchStart={startResize}
+            title="ドラッグでサイズ調整"
+          >
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M22,22H20V20H22V22M22,18H20V16H22V18M18,22H16V20H18V22M18,18H16V16H18V18M14,22H12V20H14V22M22,14H20V12H22V14Z" />
+            </svg>
+          </div>
+        )}
 
         {/* カスタマイズモード切り替えボタン */}
         <button
