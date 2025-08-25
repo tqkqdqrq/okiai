@@ -4,6 +4,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="google-site-verification" content="tfPfBPRFuexZg6XHZidTPXnfrj2SKaeY6AmJ9QZVOlo" />
     <title>沖ドキシリーズ 有利区間計算ツール</title>
     
     <!-- Favicon -->
@@ -14,6 +15,60 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.5.12/cropper.min.js"></script>
+    <style>
+      /* Cropper.jsのハンドルを大きくする（スマホ対応） */
+      .cropper-point {
+        width: 20px !important;
+        height: 20px !important;
+        opacity: 1 !important;
+      }
+      
+      /* コーナーハンドルを大きくする */
+      .cropper-point.point-e,
+      .cropper-point.point-n,
+      .cropper-point.point-w,
+      .cropper-point.point-s,
+      .cropper-point.point-ne,
+      .cropper-point.point-nw,
+      .cropper-point.point-sw,
+      .cropper-point.point-se {
+        width: 24px !important;
+        height: 24px !important;
+      }
+      
+      /* タッチターゲットを大きくする */
+      @media (max-width: 640px) {
+        .cropper-point {
+          width: 28px !important;
+          height: 28px !important;
+        }
+        
+        .cropper-point.point-e,
+        .cropper-point.point-n,
+        .cropper-point.point-w,
+        .cropper-point.point-s,
+        .cropper-point.point-ne,
+        .cropper-point.point-nw,
+        .cropper-point.point-sw,
+        .cropper-point.point-se {
+          width: 32px !important;
+          height: 32px !important;
+        }
+        
+        /* 線も太くする */
+        .cropper-line {
+          background-color: rgba(56, 189, 248, 0.3) !important;
+        }
+        
+        .cropper-line.line-e,
+        .cropper-line.line-n,
+        .cropper-line.line-w,
+        .cropper-line.line-s {
+          width: 8px !important;
+          height: 8px !important;
+        }
+      }
+    </style>
     <script>
       tailwind.config = {
         theme: {

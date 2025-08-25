@@ -52,7 +52,7 @@ export const DEFAULT_LAYOUT: NumpadLayout = {
       { id: 'addTop', type: 'addTop', label: '上追加' },
       { id: 'addBottom', type: 'addBottom', label: '下追加' },
       { id: '0', type: 'number', label: '0', value: '0' },
-      { id: 'enter', type: 'enter', label: '確定' }
+      { id: 'enter', type: 'enter', label: '閉じる' }
     ]
   ]
 };

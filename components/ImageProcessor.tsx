@@ -104,6 +104,8 @@ const ImageProcessor: React.FC<ImageProcessorProps> = ({
               cropBoxMovable: true,
               cropBoxResizable: true,
               toggleDragModeOnDblclick: false,
+              minCropBoxWidth: 50,
+              minCropBoxHeight: 50,
               dragMode: 'crop',
               checkCrossOrigin: false,
               checkOrientation: false,
@@ -305,26 +307,26 @@ const ImageProcessor: React.FC<ImageProcessorProps> = ({
 
       {/* Cropper.jsモーダル */}
       {showCropperModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
-          <div className="bg-white p-4 rounded-lg w-full max-w-4xl max-h-[90vh] flex flex-col">
-            <div className="mb-3">
-              <h3 className="text-lg font-semibold mb-2">画像の切り取り</h3>
-              <p className="text-sm text-gray-600">
-                マウスドラッグで切り取り範囲を選択してください。角をドラッグしてサイズ調整、中央をドラッグして移動できます。
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-2 sm:p-4">
+          <div className="bg-white p-3 sm:p-4 rounded-lg w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] flex flex-col">
+            <div className="mb-2 sm:mb-3">
+              <h3 className="text-base sm:text-lg font-semibold mb-1 sm:mb-2">画像の切り取り</h3>
+              <p className="text-xs sm:text-sm text-gray-600">
+                タッチ/ドラッグで切り取り範囲を選択してください。角と辺をドラッグしてサイズ調整、中央をドラッグして移動できます。
               </p>
-              <div className="mt-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800 font-semibold flex items-center">
-                  <span className="text-lg mr-2">💡</span>
+              <div className="mt-2 p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs sm:text-sm text-blue-800 font-semibold flex items-center">
+                  <span className="text-base sm:text-lg mr-1 sm:mr-2">💡</span>
                   ヒント: AI認識精度を上げるコツ
                 </p>
-                <ul className="mt-1 text-xs text-blue-700 space-y-1">
+                <ul className="mt-1 text-[10px] sm:text-xs text-blue-700 space-y-1">
                   <li>• ヘッダー部分（G数、種別、時間）を含めると認識精度が大幅に向上します</li>
                   <li>• 枚数カウントがある場合は、その部分を除外するかヘッダーも含めて切り取ってください</li>
                   <li>• 文字がはっきり読める部分を選択してください</li>
                 </ul>
               </div>
             </div>
-            <div className="flex-1 mb-4 overflow-hidden" style={{minHeight: '400px', maxHeight: '60vh'}}>
+            <div className="flex-1 mb-3 sm:mb-4 overflow-hidden" style={{minHeight: '250px', maxHeight: '55vh'}}>
               <img 
                 ref={imageForCroppingRef}
                 src={cropperImageSrc || undefined}
@@ -337,16 +339,16 @@ const ImageProcessor: React.FC<ImageProcessorProps> = ({
                 }}
               />
             </div>
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
               <button
                 onClick={handleCancelCrop}
-                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded transition duration-200"
+                className="flex-1 bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded text-sm sm:text-base transition duration-200"
               >
                 キャンセル
               </button>
               <button
                 onClick={handleCrop}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded transition duration-200"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 sm:py-2 px-3 sm:px-4 rounded text-sm sm:text-base transition duration-200"
               >
                 切り取り実行
               </button>
