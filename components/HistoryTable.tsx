@@ -443,8 +443,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                         <th className="w-8 sm:w-12 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">回</th>
                         <th className="w-16 sm:w-24 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">Ｇ数</th>
                         <th className="w-12 sm:w-20 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">種</th>
-                        <th className="w-16 sm:w-20 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">有利開始</th>
-                        <th className="w-16 sm:w-20 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">終了</th>
+                        <th className="w-32 sm:w-40 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">有利区間G数</th>
                     </tr>
                 </thead>
                 <tbody className={gameMode === 'BLACK' ? 'bg-gray-800' : 'bg-white'}>
@@ -473,7 +472,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                     onTouchEnd={handleTouchEnd}
                                     onTouchCancel={handleTouchCancel}
                                 >
-                                    <td colSpan={5} className={`
+                                    <td colSpan={4} className={`
                                         text-center py-0.5 sm:py-1 text-xs sm:text-sm font-semibold italic 
                                         ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'} 
                                         ${dragOverIndex === index ? 'bg-gradient-to-r from-blue-400 to-cyan-400 bg-opacity-30 animate-pulse' : ''}
@@ -547,10 +546,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                     <BonusTypeDisplay record={record} />
                                 </td>
                                 <td className={`p-1 sm:p-2 text-center font-mono text-[10px] sm:text-xs ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    {record.favorableZoneStart}G
-                                </td>
-                                <td className={`p-1 sm:p-2 text-center font-mono text-[10px] sm:text-xs ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    {record.favorableZoneEnd}G
+                                    {record.favorableZoneStart}G→{record.favorableZoneEnd}G
                                 </td>
                             </tr>
                         </React.Fragment>
