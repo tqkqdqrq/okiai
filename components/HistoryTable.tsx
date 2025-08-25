@@ -367,6 +367,9 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                 onUpdate(focusedRecordId, { 
                     gameCount: record.gameCount.slice(0, -1) 
                 });
+            } else {
+                // 削除対象がない場合は上の行に移動
+                handleNavigateClick('up');
             }
         }
     };
@@ -537,7 +540,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                                 ? 'bg-gray-700 text-white border-gray-600 focus:ring-red-400 focus:border-red-400 placeholder-gray-400' 
                                                 : 'bg-white text-gray-900 border-gray-300 focus:ring-gold focus:border-gold placeholder-gray-500'
                                         } ${
-                                            focusedRecordId === record.id ? 'ring-2 ring-blue-400' : ''
+                                            focusedRecordId === record.id ? 'ring-4 ring-yellow-400 border-yellow-400 shadow-lg shadow-yellow-200/50 animate-pulse' : ''
                                         }`}
                                         placeholder="G数"
                                     />
