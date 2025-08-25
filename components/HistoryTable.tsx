@@ -440,10 +440,10 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
             <table className="w-full border-collapse">
                 <thead>
                     <tr className={`${gameMode === 'BLACK' ? 'bg-red-600' : 'bg-gold'} text-white`}>
-                        <th className="w-8 sm:w-12 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">回</th>
-                        <th className="w-16 sm:w-24 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">Ｇ数</th>
-                        <th className="w-12 sm:w-20 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">種</th>
-                        <th className="w-32 sm:w-40 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">有利区間G数</th>
+                        <th className="w-6 sm:w-10 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">回</th>
+                        <th className="w-14 sm:w-20 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">Ｇ数</th>
+                        <th className="w-10 sm:w-16 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">種</th>
+                        <th className="flex-1 p-1 sm:p-2 text-xs sm:text-sm font-semibold text-center">有利区間G数</th>
                     </tr>
                 </thead>
                 <tbody className={gameMode === 'BLACK' ? 'bg-gray-800' : 'bg-white'}>
@@ -545,7 +545,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                 <td className="p-1 sm:p-2 text-center">
                                     <BonusTypeDisplay record={record} />
                                 </td>
-                                <td className={`p-1 sm:p-2 text-center font-mono text-[10px] sm:text-xs ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
+                                <td className={`p-1 sm:p-2 text-center font-mono text-sm sm:text-base whitespace-nowrap ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
                                     {record.favorableZoneStart}G→{record.favorableZoneEnd}G
                                 </td>
                             </tr>
