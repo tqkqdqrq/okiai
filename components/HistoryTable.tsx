@@ -549,7 +549,7 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ records, isDeleteMode, onUp
                                     <BonusTypeDisplay record={record} />
                                 </td>
                                 <td className={`p-1 sm:p-2 text-center font-mono text-sm sm:text-base whitespace-nowrap ${gameMode === 'BLACK' ? 'text-gray-300' : 'text-gray-600'}`}>
-                                    {record.favorableZoneStart}G→{record.favorableZoneEnd}G
+                                    {record.favorableZoneStart}G → {record.favorableZoneEnd}G
                                 </td>
                             </tr>
                         </React.Fragment>
