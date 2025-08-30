@@ -9,6 +9,7 @@ import HistoryTable from './components/HistoryTable';
 import TextOutput from './components/TextOutput';
 import AILoadingAnimation from './components/AILoadingAnimation';
 import UsageGuide from './components/UsageGuide';
+import FAQSection from './components/FAQSection';
 import { PlusIcon, TrashIcon, XCircleIcon, QuestionMarkCircleIcon } from './components/icons';
 import { useImageProcessingLimit } from './hooks/useImageProcessingLimit';
 
@@ -307,6 +308,9 @@ export default function App(): React.ReactNode {
                 {/* テンキー表示時のスクロール余白 */}
                 {showNumpad && <div className="h-80 sm:h-96" />}
             </main>
+
+            {/* FAQ セクション */}
+            <FAQSection gameMode={gameMode} />
 
             <footer className={`text-center mt-8 text-sm ${gameMode === 'BLACK' ? 'text-gray-400' : 'text-gray-500'}`}>
                 <p>Favorable Zone Calculator</p>
