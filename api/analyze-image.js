@@ -1,4 +1,6 @@
 // Vercel Serverless Function for secure API proxy
+import FormData from 'form-data';
+
 export default async function handler(req, res) {
   // CORS設定
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -41,53 +43,61 @@ export default async function handler(req, res) {
 
     // Base64データをBufferに変換
     const buffer = Buffer.from(fileData, 'base64');
-    
-    // Step 1: ファイルをアップロード（multipart/form-dataを手動構築）
-    console.log('📤 Uploading file to Dify...');
-    
-    const boundary = `----formdata-${Math.random().toString(36).substring(2)}`;
-    const CRLF = '\r\n';
-    
-    // マルチパートフォームデータを手動構築
-    let body = '';
-    body += `--${boundary}${CRLF}`;
-    body += `Content-Disposition: form-data; name="file"; filename="${fileName || 'image.png'}"${CRLF}`;
-    body += `Content-Type: ${fileType || 'image/png'}${CRLF}`;
-    body += CRLF;
-    
-    // バイナリデータ部分
-    const textEncoder = new TextEncoder();
-    const textDecoder = new TextDecoder();
-    
-    const formPrefix = textEncoder.encode(body);
-    const formSuffix = textEncoder.encode(`${CRLF}--${boundary}${CRLF}Content-Disposition: form-data; name="user"${CRLF}${CRLF}pachislot-calculator${CRLF}--${boundary}--${CRLF}`);
-    
-    // 完全なボディを構築
-    const fullBody = new Uint8Array(formPrefix.length + buffer.length + formSuffix.length);
-    fullBody.set(formPrefix, 0);
-    fullBody.set(buffer, formPrefix.length);
-    fullBody.set(formSuffix, formPrefix.length + buffer.length);
+    console.log('📦 Buffer size:', buffer.length, 'bytes');
+    console.log('🔑 API Key configured:', API_KEY ? 'Yes (hidden)' : 'No');
 
+    // Step 1: ファイルをアップロード（form-dataパッケージを使用）
+    console.log('📤 Uploading file to Dify...');
+    console.log('🔗 Target URL:', `${BASE_URL}/files/upload`);
+
+    // form-dataを使用してマルチパートフォームデータを構築
+    const form = new FormData();
+
+    // Bufferから直接ファイルを追加
+    form.append('file', buffer, {
+      filename: fileName || 'image.png',
+      contentType: fileType || 'image/png',
+      knownLength: buffer.length
+    });
+
+    // userフィールドを追加（Dify API必須）
+    form.append('user', 'pachislot-calculator');
+
+    // form-dataのgetHeaders()で正しいContent-Typeヘッダーを取得
     const uploadResponse = await fetch(`${BASE_URL}/files/upload`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
-        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        ...form.getHeaders()  // 自動的にContent-Type: multipart/form-data; boundary=xxxを設定
       },
-      body: fullBody
+      body: form
     });
 
     if (!uploadResponse.ok) {
-      const errorText = await uploadResponse.text();
-      console.error('Upload error:', errorText);
+      let errorText;
+      let errorJson;
+
+      try {
+        errorJson = await uploadResponse.json();
+        errorText = JSON.stringify(errorJson, null, 2);
+      } catch (e) {
+        errorText = await uploadResponse.text();
+      }
+
+      console.error('❌ Upload failed');
+      console.error('Status:', uploadResponse.status);
+      console.error('Response:', errorText);
+
       return res.status(uploadResponse.status).json({
         error: 'Upload failed',
-        message: `ファイルのアップロードに失敗しました: ${uploadResponse.status}`
+        message: `ファイルのアップロードに失敗しました: ${uploadResponse.status}`,
+        details: errorJson || errorText
       });
     }
 
     const uploadData = await uploadResponse.json();
-    console.log('✅ File uploaded:', uploadData);
+    console.log('✅ File uploaded successfully');
+    console.log('📄 Upload ID:', uploadData.id);
 
     // Step 2: チャットメッセージを送信
     const prompt = `
@@ -138,16 +148,29 @@ export default async function handler(req, res) {
     });
 
     if (!chatResponse.ok) {
-      const errorText = await chatResponse.text();
-      console.error('Chat error:', errorText);
+      let errorText;
+      let errorJson;
+
+      try {
+        errorJson = await chatResponse.json();
+        errorText = JSON.stringify(errorJson, null, 2);
+      } catch (e) {
+        errorText = await chatResponse.text();
+      }
+
+      console.error('❌ Chat failed');
+      console.error('Status:', chatResponse.status);
+      console.error('Response:', errorText);
+
       return res.status(chatResponse.status).json({
         error: 'Chat failed',
-        message: `AI処理に失敗しました: ${chatResponse.status}`
+        message: `AI処理に失敗しました: ${chatResponse.status}`,
+        details: errorJson || errorText
       });
     }
 
     const chatData = await chatResponse.json();
-    console.log('📨 Chat response received:', chatData);
+    console.log('📨 Chat response received');
 
     // レスポンスを解析
     const responseText = chatData.answer || chatData.data || chatData.message || '';
@@ -162,7 +185,7 @@ export default async function handler(req, res) {
         try {
           parsed = JSON.parse(jsonMatch[0]);
         } catch (e2) {
-          console.log('JSON parsing failed, using fallback');
+          console.log('⚠️ JSON parsing failed');
           return res.status(200).json({
             results: [],
             message: 'AIの応答を解析できませんでした',
@@ -184,13 +207,13 @@ export default async function handler(req, res) {
         (r) => typeof r.game === 'number' && (r.type === 'BB' || r.type === 'RB')
       );
       
-      console.log('✅ Analysis completed:', validResults);
+      console.log('✅ Analysis completed:', validResults.length, 'records');
       return res.status(200).json({
         results: validResults,
         message: '画像解析が完了しました'
       });
     } else {
-      console.error('Invalid response format:', parsed);
+      console.error('❌ Invalid response format');
       return res.status(200).json({
         results: [],
         message: 'AIの応答形式が正しくありません',
