@@ -168,9 +168,11 @@ export default async function handler(req, res) {
 
     const chatData = await chatResponse.json();
     console.log('📨 Chat response received');
+    console.log('🔍 Full chatData:', JSON.stringify(chatData, null, 2));
 
     // レスポンスを解析
     const responseText = chatData.answer || chatData.data || chatData.message || '';
+    console.log('📝 Response text:', responseText);
     
     // JSONを抽出
     let parsed;
