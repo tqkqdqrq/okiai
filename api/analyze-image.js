@@ -1,6 +1,4 @@
 // Vercel Serverless Function for secure API proxy
-import FormData from 'form-data';
-
 export default async function handler(req, res) {
   // CORS設定
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -46,29 +44,29 @@ export default async function handler(req, res) {
     console.log('📦 Buffer size:', buffer.length, 'bytes');
     console.log('🔑 API Key configured:', API_KEY ? 'Yes (hidden)' : 'No');
 
-    // Step 1: ファイルをアップロード（form-dataパッケージを使用）
+    // Step 1: ファイルをアップロード（Node.js標準FormData APIを使用）
     console.log('📤 Uploading file to Dify...');
     console.log('🔗 Target URL:', `${BASE_URL}/files/upload`);
 
-    // form-dataを使用してマルチパートフォームデータを構築
+    // Node.js標準のFormData APIを使用
     const form = new FormData();
 
-    // Bufferから直接ファイルを追加
-    form.append('file', buffer, {
-      filename: fileName || 'image.png',
-      contentType: fileType || 'image/png',
-      knownLength: buffer.length
-    });
+    // BlobからFileオブジェクトを作成
+    const blob = new Blob([buffer], { type: fileType || 'image/png' });
+    const file = new File([blob], fileName || 'image.png', { type: fileType || 'image/png' });
+
+    // ファイルを追加
+    form.append('file', file);
 
     // userフィールドを追加（Dify API必須）
     form.append('user', 'pachislot-calculator');
 
-    // form-dataのgetHeaders()で正しいContent-Typeヘッダーを取得
+    // fetchは自動的にContent-Typeヘッダーを設定
     const uploadResponse = await fetch(`${BASE_URL}/files/upload`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
-        ...form.getHeaders()  // 自動的にContent-Type: multipart/form-data; boundary=xxxを設定
+        // Content-Typeは自動設定されるため、明示的に設定しない
       },
       body: form
     });
