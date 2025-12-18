@@ -173,50 +173,43 @@ export default async function handler(req, res) {
     // レスポンスを解析
     const responseText = chatData.answer || chatData.data || chatData.message || '';
     console.log('📝 Response text:', responseText);
-    
-    // JSONを抽出
-    let parsed;
-    try {
-      parsed = JSON.parse(responseText);
-    } catch (e) {
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          parsed = JSON.parse(jsonMatch[0]);
-        } catch (e2) {
-          console.log('⚠️ JSON parsing failed');
-          return res.status(200).json({
-            results: [],
-            message: 'AIの応答を解析できませんでした',
-            rawResponse: responseText
+
+    // カンマ区切り形式のデータを解析（例: "8,RB\n1,BB"）
+    const results = [];
+    const lines = responseText.split('\n');
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed) continue;
+
+      // カンマ区切りのパターンにマッチ（例: "8,RB" または "8, RB"）
+      const match = trimmed.match(/^(\d+)\s*,\s*(BB|RB)$/i);
+      if (match) {
+        const game = parseInt(match[1]);
+        const type = match[2].toUpperCase();
+
+        if (game > 0 && (type === 'BB' || type === 'RB')) {
+          results.push({
+            game: game,
+            type: type
           });
         }
-      } else {
-        return res.status(200).json({
-          results: [],
-          message: 'JSONが見つかりませんでした',
-          rawResponse: responseText
-        });
       }
     }
 
-    // 結果を検証してフィルタリング
-    if (parsed && Array.isArray(parsed.results)) {
-      const validResults = parsed.results.filter(
-        (r) => typeof r.game === 'number' && (r.type === 'BB' || r.type === 'RB')
-      );
-      
-      console.log('✅ Analysis completed:', validResults.length, 'records');
+    console.log('✅ Analysis completed:', results.length, 'records parsed');
+
+    if (results.length > 0) {
       return res.status(200).json({
-        results: validResults,
+        results: results,
         message: '画像解析が完了しました'
       });
     } else {
-      console.error('❌ Invalid response format');
+      console.error('❌ No valid data found');
       return res.status(200).json({
         results: [],
-        message: 'AIの応答形式が正しくありません',
-        rawResponse: parsed
+        message: 'AIの応答からデータを抽出できませんでした',
+        rawResponse: responseText
       });
     }
 
