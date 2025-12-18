@@ -126,7 +126,6 @@ export default async function handler(req, res) {
       inputs: {},
       query: prompt,
       response_mode: 'blocking',
-      conversation_id: '',
       user: 'pachislot-calculator',
       files: [{
         type: 'image',
